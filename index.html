@@ -650,10 +650,11 @@ function render() {
   updateBar();
   const app = $("#app"); app.className = "";
   if (S.device !== "family" && Date.now() > unlockedUntil) kid = S.device;
-  if (!kid) R = "who";
-  const g = gate();
+  if (!kid && R !== "nopuca") R = "who";
+  const g = R === "nopuca" ? null : gate();
   if (g && !["match", "who", "result"].includes(R)) { app.innerHTML = gateHTML(g); return; }
   if (R === "who") app.innerHTML = whoHTML();
+  else if (R === "nopuca") app.innerHTML = noPucaHTML(NP_KID);
   else if (R === "home") app.innerHTML = homeHTML();
   else if (R === "cards") app.innerHTML = cardsHTML();
   else if (R === "packs") app.innerHTML = packsHTML();
@@ -666,11 +667,26 @@ function updateBar() {
   $("#pwho").textContent = kid ? kid : (S.device === "family" ? "Púcas cards" : S.device);
   const st = LINK.state, el = $("#psync"); el.textContent = st === "ok" ? "" : st === "offline" ? "offline" : st === "start" ? "…" : ""; el.title = st;
 }
+// Kids who haven't picked a Púca in Púcas Cara yet: shown with a friendly nudge (v25)
+let NP_KID = null;
+const STARTERS3 = ["dabbit", "sparkit", "mossnub"];
+const noPucaKids = () => ALLKIDS.filter(k => !KIDS.includes(k));
+const NP_SAY = k => `Hi ${k}! First, pick your Púca friend in Púcas Cara. Then come back and your cards will be waiting!`;
+function noPucaBtn(k) {
+  return `<button class="who" data-act="nopuca" data-k="${esc(k)}"><span class="av big lock" style="display:flex;align-items:center;justify-content:center">${SIL}</span><div><div class="n">${esc(k)}</div><div class="sub">Pick your Púca in Púcas Cara first!</div></div></button>`;
+}
+function noPucaHTML(k) {
+  return `<div class="gate"><div class="row" style="justify-content:center;gap:4px">${STARTERS3.map(x => `<img src="${img(x, "happy")}" alt="${C[x].name}" style="height:110px">`).join("")}</div>
+  <h1>Hi ${esc(k)}!</h1><p style="font-size:22px">First, pick your Púca friend in Púcas Cara. Then come back and your cards will be waiting!</p>
+  <button class="say" data-act="sayit" data-t="${esc(NP_SAY(k))}" aria-label="Read it to me">${ICON_SAY}</button><br>
+  <a class="btn" href="/donrifamily/" style="display:block;max-width:340px;margin:0 auto;text-align:center;text-decoration:none">Go to Púcas Cara</a>
+  ${S.device === "family" ? `<button class="btn alt" data-act="go" data-r="who" style="max-width:340px;margin-top:10px">Someone else is playing</button>` : ""}</div>`;
+}
 function whoHTML() {
   return `<h1>Púcas</h1><p class="sub">Who's playing?</p>` + KIDS.map(k => {
     const id = P.myCard(S.kids[k].puca, level(k));
     return `<button class="who" data-act="pick" data-k="${k}">${avatarHTML(k, true)}<div><div class="n">${k}</div><div class="sub">${C[id].name} · level ${level(k)}</div></div></button>`;
-  }).join("") + `<p class="sub" style="margin-top:18px">In Donrí kid mode, this opens straight to that kid.</p>`;
+  }).join("") + noPucaKids().map(noPucaBtn).join("") + `<p class="sub" style="margin-top:18px">In Donrí kid mode, this opens straight to that kid.</p>`;
 }
 function gateHTML(g) {
   const id = myId(), sw = S.device === "family" ? `<button class="pxb" data-act="who" aria-label="Switch player" style="margin:10px auto">${PX.swap}</button>` : "";
@@ -1524,6 +1540,8 @@ document.addEventListener("click", e => {
     case "dtab": dTab = el.dataset.t; openDonri(); break;
     case "say": speak(el.dataset.t); break;
     case "flip": el.classList.toggle("flipped"); SFX.flip(); if (el.classList.contains("flipped")) { const s = el.closest(".slide"); const i = s ? [...s.parentNode.children].indexOf(s) : -1; const it = HOLD && HOLD.items[i]; if (it && it.k === "puca") speak(C[it.id].name + ". " + ST[it.id].loves + "."); } break;
+    case "nopuca": kid = null; NP_KID = el.dataset.k; R = "nopuca"; render(); speak(NP_SAY(NP_KID)); break;
+    case "sayit": speak(el.dataset.t); break;
     case "pick": kid = el.dataset.k; deck(); R = "home"; SFX.tap(); render(); speak("Hi " + kid + "!"); break;
     case "who": kid = null; R = "who"; render(); break;
     case "lock": pinPad(); break;
@@ -1604,14 +1622,13 @@ function linkScreen() {
   if (st === "nofile" || st === "signedout") return `<div class="gate"><img src="img/dabbit-asleep.png" alt=""><h1>Sign in first</h1><p style="font-size:20px">Open Donrí on this phone or tablet and sign in. Then come back to Púcas cards.</p>${home}</div>`;
   if (!LINK.hasData) return `<div class="gate"><img src="img/dabbit-tired.png" alt=""><h1>Can't reach Donrí</h1><p style="font-size:20px">Check the internet, then try again.</p><button class="btn" data-act="gsync" style="max-width:320px">Try again</button>${home}</div>`;
   if (!ALLKIDS.length) return `<div class="gate"><img src="img/dabbit-idle.png" alt=""><h1>No kids yet</h1><p style="font-size:20px">Add the kids in Donrí first.</p>${home}</div>`;
-  const dev = S.device !== "family" ? S.device : null;
-  if ((dev && !KIDS.includes(dev)) || !KIDS.length) return `<div class="gate"><img src="img/sparkit-happy.png" alt=""><h1>Pick your Púca first!</h1><p style="font-size:20px">Go to Púcas Cara in Donrí and choose your Púca. It will lead your card deck.</p>${home}</div>`;
   return null;
 }
 const renderGame = render;
 render = function () {
   const ls = linkScreen();
   if (ls) { updateBar(); $("#app").innerHTML = ls; return; }
+  if (S.device !== "family" && noPucaKids().includes(S.device)) { updateBar(); NP_KID = S.device; $("#app").innerHTML = noPucaHTML(NP_KID); return; }
   if (kid && !KIDS.includes(kid)) { kid = null; R = "who"; }
   renderGame();
 };

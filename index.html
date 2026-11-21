@@ -1525,6 +1525,7 @@ document.addEventListener("click", e => {
     case "gtest": testCards(); save(); toast("Test cards", "Every card added to both kids' collections, for grown-up testing.", true); grownSheet(); break;
     case "glooks": looksSheet(); break;
     case "ginstall": doInstall(); break;
+    case "playhere": PLAY_HERE = true; render(); break;
     case "gsync": LINK.sync(true).then(() => { project(); grownSheet(); }); break;
     case "looks": looksSheet(); break;
     case "howto": howTo(R === "match" && M ? (M.mode === "little" ? "little" : "normal") : null); break;
@@ -1626,6 +1627,7 @@ function linkScreen() {
 }
 const renderGame = render;
 render = function () {
+  if (!isInstalled() && !PLAY_HERE && !(R === "match" || R === "result")) { updateBar(); $("#app").innerHTML = getAppScreen(); return; }
   const ls = linkScreen();
   if (ls) { updateBar(); $("#app").innerHTML = ls; return; }
   if (S.device !== "family" && noPucaKids().includes(S.device)) { updateBar(); NP_KID = S.device; $("#app").innerHTML = noPucaHTML(NP_KID); return; }
@@ -1649,10 +1651,24 @@ function grownSheet() {
 // ---------- Its own app on the home screen (v24) ----------
 let installEvt = null;
 // The app starts at ./?app=1 (see app.webmanifest), so only the real Púcas Cards app counts as "installed".
-if (/[?&]app=1/.test(location.search)) try { sessionStorage.setItem("pucas.app", "1"); } catch (e) {}
-const isInstalled = () => { try { return sessionStorage.getItem("pucas.app") === "1" && matchMedia("(display-mode: standalone)").matches; } catch (e) { return false; } };
-addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
+// /pucas/ is outside Donrí's address, so "full screen" here can only be the Púcas Cards app itself.
+const isInstalled = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; if (!isInstalled() && !PLAY_HERE) render(); });
 addEventListener("appinstalled", () => { installEvt = null; toast("Púcas Cards", "Added to the home screen. Look for Rua!"); });
+/* ---------- Púcas Cards is its own app (v26): in a browser or inside Donrí, show how to get it instead of the game ---------- */
+let PLAY_HERE = false; // "Just play here this time" (until the page is closed)
+const CHROME_URL = "intent://" + location.host + location.pathname + "#Intent;scheme=https;package=com.android.chrome;end";
+function getAppScreen() {
+  const how = installEvt
+    ? `<button class="btn" data-act="ginstall" style="max-width:340px;display:block;margin:0 auto">📲 Install now</button>`
+    : `<p class="sub" style="text-align:left;max-width:340px;margin:0 auto 12px"><b>Grown-ups, two taps:</b><br>1. Tap <b>Download game</b>.<br>2. In Chrome, tap <b>⋮</b> then <b>Install</b>.</p>
+  <a class="btn" href="${/Android/i.test(navigator.userAgent) ? CHROME_URL : location.pathname}" style="max-width:340px;display:flex;align-items:center;justify-content:center;margin:0 auto;text-decoration:none">Download game</a>
+  <p class="sub" style="max-width:340px;margin:10px auto">Already in Chrome? Tap <b>⋮</b> then <b>Install</b>.</p>`;
+  return `<div class="gate"><img src="icons/rua-icon-192.png" alt="" style="width:130px;height:130px;border-radius:50%;object-fit:cover">
+  <h1>Púcas Cards is its own app</h1><p style="font-size:20px">Put Rua on the home screen and the game opens full screen. Same cards, gems and playtime: nothing to set up.</p>
+  ${how}
+  <button class="link" data-act="playhere" style="width:100%">Just play here this time</button></div>`;
+}
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 function installCard() {
   const body = isInstalled() ? `<p class="muted" style="margin:0">✓ This is the Púcas Cards app.</p>`
@@ -1661,9 +1677,10 @@ function installCard() {
   return `<div class="card"><b style="font-size:18px">On the home screen</b><div style="margin-top:8px">${body}</div></div>`;
 }
 async function doInstall() {
-  if (!installEvt) return grownSheet();
+  if (!installEvt) return $(".ov") ? grownSheet() : render();
+  const fromSheet = !!$(".ov");
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
-  installEvt = null; grownSheet();
+  installEvt = null; fromSheet ? grownSheet() : render();
 }
 LINK.on(kind => {
   if (kind === "state") { updateBar(); return; }

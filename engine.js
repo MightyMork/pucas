@@ -172,50 +172,81 @@
     return { own: own, help: help, team: [o[0], o[1]], packs: 0 };
   }
 
-  /* Packs follow a fixed path: no chance, no loot boxes. The kid can always see
-     how many packs until the next Legendary. */
-  function packPath(puca) {
-    var o = others(puca), a = LINES[o[0]], b = LINES[o[1]], G = function (l) { return GEM_OF[CARDS[l].type]; };
-    return [
-      { puca: a[1], help: [G(o[0]), "apple"] },
-      { puca: "hopsy", help: ["opal", "fish"] },
-      { puca: b[1], help: [G(o[1]), "water"] },
-      { puca: "cairnie", help: ["quartz", "pebble"] },
-      { puca: a[2], help: ["tune", "honey"] },
-      { puca: "bogbop", legend: "setanta", help: ["amber"] },
-      { puca: "puffle", help: ["pearl", "pinecone"] },
-      { puca: b[2], help: ["berries", "mist"] },
-      { puca: "moonhopper", legend: "gigi", help: ["opal"] },
-      { puca: "cairnback", help: ["quartz", "water"] },
-      { puca: "bogbellow", help: ["amber", "apple"] },
-      { puca: "gustbeak", legend: "hound", help: ["pearl"] },
-      { puca: "mactire", help: ["opal", "honey"] },
-      { puca: "gealach", help: ["tune", "fish"] },
-      { puca: "brocmor", legend: "conchobar", help: ["quartz"] },
-      { puca: "monog", help: ["amber", "pebble"] },
-      { puca: "toirni", help: ["pearl", "pinecone"] },
-      { puca: "mor", help: ["amber", "honey"] }
-    ];
+  /* Packs (5 cards, 21 Nov 2026): no chance, no loot boxes, never a repeat Púca.
+     Each pack gives the next Púca the kid hasn't got yet, from the Púcas made so far,
+     plus a gem card that matches it and help cards to make 5. Every 4th pack is a
+     double (2 new Púcas) when 6 or more are still waiting, so kids catch up after a big
+     batch of new art. Legend cards come at set packs (6, 9, 12, 15). When a kid has every
+     Púca made so far, the pack is a helper pack: 5 gem and help cards. */
+  var PACK_SIZE = 5;
+  /* Púcas arrive a family at a time. New families are added to the end. */
+  var FAMILIES = [
+    { name: "The three starters", ids: ["dabbit", "splashtail", "dobharchu", "sparkit", "emberbrush", "cruachan", "mossnub", "thornback", "whitethorn"] },
+    { name: "The hares", ids: ["hopsy", "moonhopper", "gealach"] },
+    { name: "The badgers", ids: ["cairnie", "cairnback", "brocmor"] },
+    { name: "The toads", ids: ["bogbop", "bogbellow", "monog"] },
+    { name: "The puffins", ids: ["puffle", "gustbeak", "toirni"] },
+    { name: "The Mythics", ids: ["mactire", "mor"] }
+  ];
+  var TOTAL_PUCAS = 150;
+  /* The order packs hand Púcas out: young forms of the other starters first, babies
+     before grown forms, Mythics late. Anything not listed (new families) goes after. */
+  var PACK_ORDER = ["#a1", "hopsy", "#b1", "cairnie", "#a2", "bogbop", "puffle", "#b2", "moonhopper", "cairnback",
+    "bogbellow", "gustbeak", "mactire", "gealach", "brocmor", "monog", "toirni", "mor"];
+  var LEGEND_AT = { 6: "setanta", 9: "gigi", 12: "hound", 15: "conchobar" };
+  var HELP_TURN = ["apple", "water", "pebble", "tune", "honey", "berries", "mist", "fish", "pinecone", "oatcake", "wisp", "den"];
+
+  function madeIds(families) {
+    var out = []; FAMILIES.slice(0, families == null ? FAMILIES.length : families).forEach(function (f) { out = out.concat(f.ids); });
+    return out;
   }
-  function packContents(puca, n) {
-    var p = packPath(puca);
-    return n < p.length ? p[n] : { help: ["oatcake", "honey", GEM_OF[CARDS[puca].type]], more: true };
+  function packOrder(puca) {
+    var o = others(puca), a = LINES[o[0]], b = LINES[o[1]];
+    var list = PACK_ORDER.map(function (x) { return x === "#a1" ? a[1] : x === "#a2" ? a[2] : x === "#b1" ? b[1] : x === "#b2" ? b[2] : x; });
+    madeIds().forEach(function (id) { if (list.indexOf(id) < 0) list.push(id); });
+    return list;
   }
-  function packsToLegendary(puca, n) {
-    var p = packPath(puca);
-    for (var i = n; i < p.length; i++) if (p[i].puca && CARDS[p[i].puca].rarity === 4) return i - n + 1;
+  /* What's still to come for this kid, in order. */
+  function waitingFor(puca, own, families) {
+    var made = madeIds(families);
+    return packOrder(puca).filter(function (id) {
+      return made.indexOf(id) >= 0 && !(own && own[id]) && CARDS[id] && CARDS[id].line !== puca;
+    });
+  }
+  /* n = packs opened so far (this pack is number n + 1). */
+  function packContents(puca, n, own, families) {
+    var wait = waitingFor(puca, own, families), num = n + 1, cards = [];
+    var count = wait.length ? (num % 4 === 0 && wait.length >= 6 ? 2 : 1) : 0;
+    var pucas = wait.slice(0, count);
+    pucas.forEach(function (id) { cards.push({ k: "puca", id: id }); });
+    if (LEGEND_AT[num]) cards.push({ k: "help", id: LEGEND_AT[num] });
+    var g = GEM_OF[CARDS[pucas[0] || puca].type];
+    cards.push({ k: "help", id: g });
+    if (!pucas.length) cards.push({ k: "help", id: GEM_OF[CARDS[puca].type] === g ? "emerald" : GEM_OF[CARDS[puca].type] });
+    var i = n * 3;
+    while (cards.length < PACK_SIZE) cards.push({ k: "help", id: HELP_TURN[i++ % HELP_TURN.length] });
+    return { cards: cards, pucas: pucas, legend: LEGEND_AT[num] || null, double: count === 2, helper: !pucas.length, waiting: wait.length - count };
+  }
+  /* Look ahead at the next packs, assuming no new Púcas are made in the meantime. */
+  function packsAhead(puca, n, own, families, max) {
+    var o = {}; Object.keys(own || {}).forEach(function (k) { o[k] = own[k]; });
+    var out = [];
+    for (var i = 0; i < (max || 40); i++) {
+      var c = packContents(puca, n + i, o, families);
+      c.pucas.forEach(function (id) { o[id] = 1; });
+      out.push(c);
+    }
+    return out;
+  }
+  function packsTo(puca, n, own, families, test) {
+    var a = packsAhead(puca, n, own, families);
+    for (var i = 0; i < a.length; i++) if (test(a[i])) return i + 1;
     return null;
   }
-  function packsTo(puca, n, test) {
-    var p = packPath(puca);
-    for (var i = n; i < p.length; i++) if (test(p[i])) return i - n + 1;
-    return null;
-  }
-  function packsToPuca(puca, n) {
-    var p = packPath(puca);
-    for (var i = n; i < p.length; i++) if (p[i].puca) return i - n + 1;
-    return null;
-  }
+  function packsToLegendary(puca, n, own, families) { return packsTo(puca, n, own, families, function (c) { return c.pucas.some(function (id) { return CARDS[id].rarity === 4; }); }); }
+  function packsToPuca(puca, n, own, families) { return packsTo(puca, n, own, families, function (c) { return c.pucas.length > 0; }); }
+  /* Old name kept for anything that still asks for the path. */
+  function packPath(puca) { return packsAhead(puca, 0, {}, null, 24); }
 
   function shuffle(a, rng) {
     for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rng() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
@@ -551,7 +582,7 @@
     puffFor: puffFor, MON_GEMS: MON_GEMS, isGem: isGem, tcg: tcg, gemTargets: gemTargets, attach: attach,
     MAX_GEMS: MAX_GEMS, TARGET: TARGET, GEM_OF: GEM_OF, isGrow: isGrow, growTargets: growTargets, grow: grow, prevOf: P_LINE_PREV, HAND_MAX: HAND_MAX, PACK_PRICE: PACK_PRICE, WIN_POINTS: WIN_POINTS,
     stageFor: stageFor, myCard: myCard, others: others, starterDeck: starterDeck, packPath: packPath, packContents: packContents,
-    packsToLegendary: packsToLegendary, packsToPuca: packsToPuca, helpList: helpList, shuffle: shuffle,
+    packsToLegendary: packsToLegendary, packsToPuca: packsToPuca, packsAhead: packsAhead, waitingFor: waitingFor, madeIds: madeIds, FAMILIES: FAMILIES, TOTAL_PUCAS: TOTAL_PUCAS, PACK_SIZE: PACK_SIZE, helpList: helpList, shuffle: shuffle,
     ruaTeam: ruaTeam, ruaLittle: ruaLittle, newMatch: newMatch, front: front, card: card, dmgFor: dmgFor,
     canMove: canMove, useMove: useMove, canSwap: canSwap, swap: swap, helpBlock: helpBlock, playHelp: playHelp,
     pass: pass, benchAlive: benchAlive, aiNext: aiNext, aiStep: aiStep };

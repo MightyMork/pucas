@@ -284,7 +284,9 @@ h1{font-size:30px}h2{font-size:22px}
 @keyframes tear{to{clip-path:polygon(0 30%,100% 22%,100% 100%,0 100%)}}
 @keyframes wob{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
 .reveal{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0;min-height:200px}
-.reveal .flip3d{zoom:.62}
+.reveal .flip3d{zoom:.5}
+.coming{border-style:dashed}
+.shadow-puca{width:56px;height:56px;flex:none;border-radius:12px;background:#0b1226;color:#ffffff55;display:grid;place-items:center;font:28px "Pixelify Sans",monospace;box-shadow:inset 0 0 0 2px #ffffff22}
 .rise{animation:rise .5s ease-out both}
 @keyframes rise{from{transform:translateY(80px);opacity:0}to{transform:none;opacity:1}}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
@@ -629,7 +631,7 @@ function front(item) { return item.k === "help" ? hcard(item.id) : item.k === "b
 function backOf(item) { return item.k === "puca" ? sback(item.id) : cback(); }
 function flipCard(item, flipped) { return `<div class="flip3d${flipped ? " flipped" : ""}" data-act="flip"><div class="fi"><div class="ff">${front(item)}</div><div class="fb">${backOf(item)}</div></div></div>`; }
 function packArt(mini) {
-  return `<img class="pimg" src="img/pack-front.png" alt=""><span class="plogo"><span class="logo">PÚCAS</span><span class="w">WILD ÉIRE</span></span><span class="foot">3 CARDS · SET 1</span>`;
+  return `<img class="pimg" src="img/pack-front.png" alt=""><span class="plogo"><span class="logo">PÚCAS</span><span class="w">WILD ÉIRE</span></span><span class="foot">5 CARDS · SET 1</span>`;
 }
 function avatarHTML(k, big, px) {
   const a = (S.cards[k] && S.cards[k].avatar) || S.kids[k].puca;
@@ -794,11 +796,17 @@ function packsHTML() {
   else body = `<div class="pack" style="animation:none">${packArt()}</div>` + (k.gems >= P.PACK_PRICE
     ? `<button class="btn green" data-act="ask">Ask for a card pack · ${P.PACK_PRICE} gems</button><p class="sub">A grown-up says yes in Donrí, then Donrí takes the gems.</p>`
     : `<div class="panel" style="text-align:center"><p style="font-size:20px;margin:0">A pack is ${P.PACK_PRICE} gems. You have ${k.gems}.</p><p class="sub">Jobs in Donrí earn gems!</p>${sayBtn("A pack is " + P.PACK_PRICE + " gems. You have " + k.gems + ". Jobs in Donrí earn gems!")}</div>`);
-  const toL = P.packsToLegendary(k.puca, d.packs), toP = P.packsToPuca(k.puca, d.packs), toM = P.packsTo(k.puca, d.packs, x => x.puca && C[x.puca].mythic), toLg = P.packsTo(k.puca, d.packs, x => x.legend);
-  const next = toP === 1 ? "Your next pack has a new Púca in it!" : toP ? `A new Púca comes in ${toP} packs.` : "New Púcas are on their way to Wild Éire!";
+  const fam = null, ahead = P.packsAhead(k.puca, d.packs, d.own, fam, 40);
+  const find = (t) => { for (let i = 0; i < ahead.length; i++) if (t(ahead[i])) return i + 1; return null; };
+  const toP = find(x => x.pucas.length), toL = find(x => x.pucas.some(id => C[id].rarity === 4)), toM = find(x => x.pucas.some(id => C[id].mythic)), toLg = find(x => x.legend), toD = find(x => x.double);
+  const left = P.waitingFor(k.puca, d.own, fam).length, made = P.madeIds(fam).length;
+  const nextFam = fam != null && fam < P.FAMILIES.length ? P.FAMILIES[fam].name : null;
+  const next = toP === 1 ? (ahead[0].double ? "Your next pack has <b>two</b> new Púcas in it!" : "Your next pack has a new Púca in it!") : toP ? `A new Púca comes in ${toP} packs.` : "You have every Púca made so far! Your next pack is a <b>helper pack</b>: 5 gem and help cards to make your deck stronger.";
+  const s_ = n => n > 1 ? "s" : "";
   return `<div class="row">${backBtn()}<h1 class="grow" style="text-align:right">Card packs</h1></div>
-  <div class="row wrap"><span class="chip"><span class="gem"></span> ${k.gems} gems</span><span class="chip">Packs opened: ${d.packs}</span></div>
-  ${body}<div class="panel"><p style="margin:0 0 6px">${next}</p>${toL ? `<p style="margin:0">✦ A <b>Legendary</b> Púca comes in ${toL} pack${toL > 1 ? "s" : ""}.</p>` : ""}${toLg ? `<p style="margin:6px 0 0">📜 A <b>Legend</b> card comes in ${toLg} pack${toLg > 1 ? "s" : ""}.</p>` : ""}${toM ? `<p style="margin:6px 0 0">✸ A <b>Mythic</b> Púca comes in ${toM} pack${toM > 1 ? "s" : ""}.</p>` : ""}<p class="sub" style="margin:8px 0 0">No luck needed: every pack is planned, so you always know what's coming.</p></div>`;
+  <div class="row wrap"><span class="chip"><span class="gem"></span> ${k.gems} gems</span><span class="chip">Packs opened: ${d.packs}</span><span class="chip">${P.PACK_SIZE} cards a pack</span></div>
+  ${body}<div class="panel"><p style="margin:0 0 6px">${next}</p>${toD && toD > 1 ? `<p style="margin:0 0 6px">✌ A <b>double pack</b> (two new Púcas) comes in ${toD} pack${s_(toD)}.</p>` : ""}${toL ? `<p style="margin:0">✦ A <b>Legendary</b> Púca comes in ${toL} pack${s_(toL)}.</p>` : ""}${toLg ? `<p style="margin:6px 0 0">📜 A <b>Legend</b> card comes in ${toLg} pack${s_(toLg)}.</p>` : ""}${toM ? `<p style="margin:6px 0 0">✸ A <b>Mythic</b> Púca comes in ${toM} pack${s_(toM)}.</p>` : ""}<p class="sub" style="margin:8px 0 0">No luck needed: every pack is planned, and you never get the same Púca twice.</p></div>
+  <div class="panel coming"><div class="row" style="gap:12px;align-items:center"><div class="shadow-puca" aria-hidden="true">?</div><div class="grow"><p style="margin:0"><b>${left}</b> Púca${left === 1 ? "" : "s"} still to find.</p><p class="sub" style="margin:4px 0 0">${made} of ${P.TOTAL_PUCAS} Púcas made so far. ${nextFam ? `<b>Coming soon: ${nextFam}!</b>` : "More are on their way to Wild Éire!"}</p></div></div></div>`;
 }
 
 /* ---------- set up the board before a match ---------- */
@@ -1333,18 +1341,16 @@ function ask() {
 let PACK = null;
 async function openPack() {
   const d = deck(), k = K(); if (!d.ready) return;
-  const c = P.packContents(k.puca, d.packs);
+  const c = P.packContents(k.puca, d.packs, d.own, null);
   d.ready--; d.packs++;
-  const got = [];
-  if (c.puca) { d.own[c.puca] = 1; got.push({ k: "puca", id: c.puca }); }
-  if (c.legend) { d.help[c.legend] = (d.help[c.legend] || 0) + 1; got.push({ k: "help", id: c.legend }); }
-  c.help.forEach(h => { d.help[h] = (d.help[h] || 0) + 1; got.push({ k: "help", id: h }); });
+  const got = c.cards;
+  got.forEach(g => { if (g.k === "puca") d.own[g.id] = 1; else d.help[g.id] = (d.help[g.id] || 0) + 1; });
   wrote("cards/" + kid, `Opened pack ${d.packs}: ${got.map(g => g.k === "puca" ? C[g.id].name : H[g.id].name).join(", ")}`);
   act(`${kid} opened card pack ${d.packs}`); save();
-  PACK = { got, flipped: 0, more: c.more };
+  PACK = { got, flipped: 0, helper: c.helper, double: c.double };
   const p = $(".pack"); if (p) { const pi = p.querySelector(".pimg"); if (pi) pi.src = "img/pack-open.png"; p.classList.add("tear"); p.style.animation = "none"; }
   SFX.pack(); await wait(650);
-  $("#app").innerHTML = `<h1 style="text-align:center">Your pack!</h1><p class="sub" style="text-align:center">Tap each card to turn it over.</p><div class="reveal" id="rev"></div><div id="after"></div>`;
+  $("#app").innerHTML = `<h1 style="text-align:center">${c.double ? "A double pack!" : c.helper ? "A helper pack!" : "Your pack!"}</h1><p class="sub" style="text-align:center">Tap each card to turn it over.</p><div class="reveal" id="rev"></div><div id="after"></div>`;
   for (let i = 0; i < got.length; i++) {
     await wait(350); if (!$("#rev")) return;
     const w = document.createElement("div"); w.className = "rise";
@@ -1361,7 +1367,7 @@ function packFlip(el) {
   if ((g.k === "puca" && C[g.id].rarity >= 4) || (g.k === "help" && H[g.id].legend)) confetti();
   if (++PACK.flipped === PACK.got.length) setTimeout(() => {
     const a = $("#after"); if (!a) return;
-    a.innerHTML = `<p style="text-align:center">${PACK.more ? "New Púcas are on their way!" : "Added to your cards!"}</p><button class="btn" data-act="go" data-r="cards">See my cards</button><button class="btn alt" data-act="go" data-r="home" style="margin-top:10px">Home</button>`;
+    a.innerHTML = `<p style="text-align:center">${PACK.helper ? "You have every Púca made so far! New Púcas are coming soon." : PACK.double ? "Two new Púcas! Added to your cards." : "Added to your cards!"}</p><button class="btn" data-act="go" data-r="cards">See my cards</button><button class="btn alt" data-act="go" data-r="home" style="margin-top:10px">Home</button>`;
   }, 700);
 }
 

@@ -1,6 +1,6 @@
 // Púcas Cards service worker: pages and scripts fresh when online (saved copy when offline),
 // pictures from the saved copy. Only this game's own files under /pucas/; Microsoft, OneDrive and ntfy are never touched.
-const CACHE = "pucas-v9";
+const CACHE = "pucas-v10";
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(["./", "app.webmanifest", "engine.js", "link.js", "icons/rua-icon-192.png", "icons/rua-icon-512.png"].map(u => new Request(u, {cache:"reload"})))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("pucas-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

@@ -493,8 +493,13 @@ h1{font-size:30px}h2{font-size:22px}
 .wcard.empty{width:54px;height:76px}
 .wcard .wn{font-size:14px;bottom:11px}
 .banner{font-size:44px;background:linear-gradient(90deg,transparent,#000c 12%,#000c 88%,transparent);padding:10px 0;letter-spacing:3px}
-.hfan{height:128px;padding-top:20px}
-.hfan>button .tcw{zoom:.32}
+.hfan{height:auto;min-height:140px;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;align-items:flex-start;gap:8px;padding:26px 10px 12px;scroll-snap-type:x proximity;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);scrollbar-width:none}
+.hfan::-webkit-scrollbar{display:none}
+.hfan>button{flex:0 0 auto;width:76px;height:106px;padding:0;background:none;border:0;scroll-snap-align:start;touch-action:pan-x;transform:none!important;margin:0!important}
+.hfan>button .tcw{zoom:.31}
+.hfan>button.last{margin-right:24px!important}
+.hfan .lbl{position:absolute;left:10px;top:4px}
+.cico{left:-4px!important;right:auto!important}
 .now{min-height:42px;padding:4px 12px;font-size:16px;margin:0}
 .little .now{min-height:48px;font-size:18px}
 .bd .shead2{min-height:26px}
@@ -1329,7 +1334,7 @@ function renderMatch() {
       if (it.hand) {
         const k = it.k, g = P.isGrow(k), dim = !myTurn || (g ? ks.grew : ks.helpUsed);
         const can = !dim && !P.helpBlock(M, it.i);
-        return `<button class="${dim ? "dim" : ""}${can ? " can" : ""}" style="${st}" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}${g ? '<span class="cico" aria-label="grows a Púca">↑</span>' : isNew[it.i] ? '<span class="cico" aria-label="new card">★</span>' : ""}</button>`;
+        return `<button class="${dim ? "dim" : ""}${can ? " can" : ""}" style="" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}${g ? '<span class="cico" aria-label="grows a Púca">↑</span>' : isNew[it.i] ? '<span class="cico" aria-label="new card">★</span>' : ""}</button>`;
       }
       const o = it.o;
       return `<button style="${st}" data-act="holdboard" data-side="${VIEW}" data-i="${o.i}" ${o.x.out ? "" : `data-drag="bench" data-mon="${o.i}"`}>${tcard(o.x.id)}${pips(o.x, true)}${o.x.out ? "" : miniVs(o.x.id, rf.id)}</button>`;
@@ -1339,25 +1344,7 @@ function renderMatch() {
     <p class="sub" style="font-size:13px;text-align:center;margin:6px 0 0">Drag a card to where it goes. Gold lights show you where. 💪 means strong against Rua's Púca, 😟 means careful.</p>`;
   } else h += `<div style="text-align:center;margin-top:8px"><button class="btn alt small" style="width:auto;margin:0 auto" data-act="pass" ${myTurn ? "" : "disabled"}>${PX.save} Wait a turn</button></div>`;
   app.innerHTML = h;
-  fitFan();
 }
-/* v29: squeeze the hand so every card fits inside the screen (up to 7 cards plus the waiting Púcas).
-   The fan's tilt swings the outer cards out past the sides, which pushed the whole page off centre on a phone.
-   Measure the tilted cards and tighten the overlap, then the tilt, until they fit. */
-function fitFan() {
-  const fan = document.querySelector(".hfan"); if (!fan) return;
-  const bs = [...fan.querySelectorAll(":scope>button")], n = bs.length; if (n < 2) return;
-  const box = fan.getBoundingClientRect(), L = box.left + 2, R = box.right - 2, cw = bs[0].offsetWidth, mid = (n - 1) / 2;
-  let step = n > 3 ? 7 : 9, lift = n > 3 ? 6 : 9, ov = parseFloat(bs[0].style.marginLeft) || 0;
-  const apply = () => bs.forEach((b, j) => { b.style.transform = `rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * lift}px)`; b.style.marginLeft = b.style.marginRight = ov + "px"; });
-  for (let t = 0; t < 20; t++) {
-    let lo = Infinity, hi = -Infinity; bs.forEach(b => { const r = b.getBoundingClientRect(); lo = Math.min(lo, r.left); hi = Math.max(hi, r.right); });
-    if (lo >= L && hi <= R) break;
-    if (ov > -cw * 0.38) ov = Math.max(-cw * 0.38, ov - 4); else if (step > 2) { step--; lift = Math.max(3, lift - 1); } else break;
-    apply();
-  }
-}
-addEventListener("resize", fitFan);
 function whereText(j) {
   const s = M.sides[VIEW], k = s.hand[j];
   if (P.isGrow(k)) { const t = P.growTargets(M, j, VIEW); return t.length ? `Put it on ${C[s.mons[t[0]].id].name} to grow it.` : `It grows from ${C[P.prevOf(k)].name}.`; }
@@ -1888,7 +1875,7 @@ document.addEventListener("click", e => {
       case "cfclear": CF = { type: "all", rar: 0, stage: 0, sort: CF.sort, open: CF.open }; render(); break;
       case "cftog": CF.open = !CF.open; render(); SFX.tap(); break;
     case "holdhelp": { const help = deck().help, ks = Object.keys(help).filter(k => help[k]); holdUp(ks.map(k => ({ k: "help", id: k })), +el.dataset.i, "Help cards"); break; }
-    case "holdhand": if (inMatch) holdHand(+el.dataset.i); break;
+    case "holdhand": if (inMatch) { const hi = +el.dataset.i, why = humanTurn() ? P.helpBlock(M, hi) : null; if (why) { setMsg(why, true); el.animate && el.animate([{ transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], { duration: 220 }); } else holdHand(hi); } break;
     case "pickmon": if (M && M.pick === VIEW && !busy) { const ev = P.pickNext(M, +el.dataset.i); if (ev) playEvents(); } break;
     case "holdboard": if (inMatch) holdBoard(+el.dataset.side, +el.dataset.i); break;
     case "playhelp": kidAct(() => { const blk = P.helpBlock(M, +el.dataset.i); if (blk) { setMsg(blk, true); return false; } return P.playHelp(M, +el.dataset.i, el.dataset.to === undefined ? undefined : +el.dataset.to); }); break;

@@ -277,7 +277,7 @@ h1{font-size:30px}h2{font-size:22px}
 .pack .foot{position:absolute;left:0;right:0;bottom:16px;text-align:center;font-family:"PxDigits",'Pixelify Sans',monospace;font-size:11px;color:#4a3216;letter-spacing:2px}
 .punt .coinwrap{perspective:600px;height:150px;display:flex;align-items:flex-end;justify-content:center;margin:20px 0}
 .coin{width:130px;height:130px;position:relative;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.3,.6,.4,1)}
-.coin .cf,.coin .cb{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;background:radial-gradient(circle at 35% 30%,#ffe9a0,#f2c94c 45%,#c9961f 80%);border:6px solid #a8780f;box-shadow:inset 0 0 0 4px #e8b93a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.coin .cf,.coin .cb{position:absolute;inset:0;width:auto;height:auto;padding:0;border-radius:50%;backface-visibility:hidden;background:radial-gradient(circle at 35% 30%,#ffe9a0,#f2c94c 45%,#c9961f 80%);border:6px solid #a8780f;box-shadow:inset 0 0 0 4px #e8b93a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .coin .cb{transform:rotateX(180deg)}.coin svg{width:56px;height:56px}
 .drawpop{position:fixed;inset:0;z-index:60;background:#0c0b18e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center}
 .drawpop h2{color:var(--gold);margin:0}.drawpop .dcards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -608,6 +608,41 @@ h1{font-size:30px}h2{font-size:22px}
 .pips span{font-size:11px;color:#b9afd0;text-align:center;line-height:1;font-family:"PxDigits",'Pixelify Sans',monospace}
 .pips.sm{top:2px;right:-4px;padding:2px}.pips.sm i{width:8px;height:8px;border-width:1px}
 @keyframes pop{40%{transform:scale(1.25)}}
+/* ---- step 4: turn moments ---- */
+.moment{gap:14px}
+.moment [hidden]{display:none!important}
+.coin.hare .cf{display:none}.coin.hare .cb{transform:none}
+.coin .cf,.coin .cb{background:none!important;border:0!important;box-shadow:none!important}
+.coin .pxcoin{position:absolute;inset:0;width:100%!important;height:100%!important;shape-rendering:crispEdges}
+.coin .av{position:absolute;left:50%;bottom:13%;translate:-50% 0;width:30px!important;height:30px!important;border-radius:0;border:3px solid #6b4a0e!important}
+.moment h1{font:700 34px 'Pixelify Sans',monospace;color:var(--gold);margin:0;text-shadow:3px 3px 0 #000}
+.moment .pair{display:flex;align-items:center;justify-content:center;gap:18px}
+.moment .pair img{height:130px;image-rendering:pixelated}
+.moment .big{font:700 42px 'Pixelify Sans',monospace;color:#fff;text-shadow:3px 3px 0 #000;line-height:1.1;min-height:48px}
+.moment .big.in{animation:popIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.moment .note{font-size:19px;max-width:320px;margin:0 auto;color:#e9e3ff;line-height:1.35}
+.moment .btn{max-width:300px;width:100%;min-height:56px}
+.moment.little h1{font-size:40px}.moment.little .big{font-size:50px}.moment.little .note{font-size:22px}
+@keyframes popIn{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:none;opacity:1}}
+.leftpop{position:absolute;left:0;right:0;top:37%;z-index:11;text-align:center;pointer-events:none}
+.leftpop b{display:inline-block;max-width:92%;background:#000d;border:3px solid var(--gold);padding:8px 16px;font:700 30px 'Pixelify Sans',monospace;color:#fff;text-shadow:2px 2px 0 #000;line-height:1.15}
+.leftpop.r b{border-color:#d8b8ff}
+.little .leftpop b{font-size:40px;padding:10px 20px}
+.dots i.pop{animation:dotpop .8s ease-out}
+@keyframes dotpop{0%{transform:scale(1)}35%{transform:scale(1.9);box-shadow:0 0 0 6px #fff6}100%{transform:scale(1)}}
+.zzz{position:absolute;z-index:8;font:700 30px 'Pixelify Sans',monospace;color:#d8b8ff;text-shadow:2px 2px 0 #000;pointer-events:none;opacity:0;animation:zrise 2.2s ease-out forwards}
+@keyframes zrise{0%{transform:translate(0,0);opacity:0}20%{opacity:1}100%{transform:translate(18px,-64px);opacity:0}}
+.endscore{display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;margin:6px 0}
+.endscore .dots i{width:16px;height:16px}
+.endteam{display:flex;justify-content:center;gap:6px;margin:10px 0}
+.endteam figure{margin:0;width:31%;max-width:112px;text-align:center}
+.gate .endteam img{height:auto;width:100%;max-height:104px;object-fit:contain;image-rendering:pixelated}
+.endteam figcaption{font-size:16px;line-height:1.15;margin-top:2px}
+.endteam.rua{margin-top:0}.endteam.rua figure{max-width:76px}.endteam.rua figcaption{font-size:14px}
+.endstats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.endstats span{background:#2a2550;border:2px solid #4a4370;padding:6px 10px;font-size:17px}
+.little .endteam figcaption,.gate.little .endteam figcaption{font-size:19px}
+@media (prefers-reduced-motion:reduce){.zzz{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1082,7 +1117,7 @@ function holdForSlot(slot) {
 }
 
 /* ---------- matches ---------- */
-function startMatch(mode) {
+async function startMatch(mode) {
   const rng = Math.random, d = deck();
   let kt = board(), rt;
   if (mode === "quick") { kt = [myId()]; rt = [P.ruaTeam(kt, rng)[0]]; }
@@ -1093,12 +1128,14 @@ function startMatch(mode) {
   const kidGrow = own.filter(x => !kt.includes(x) && kt.some(b => C[b].line === C[x].line && C[b].stage < C[x].stage));
   const ruaGrow = rt.filter(x => C[x].stage < 3).slice(0, kidGrow.length).map(x => P.LINES[C[x].line][C[x].stage]);
   const ruaHelp = Object.assign({}, P.starterDeck(P.ALL_LINES[Math.floor(rng() * 3)]).help, Object.keys(d.help).some(x => H[x] && H[x].legend && d.help[x]) ? { setanta: 1 } : {});
-  M = P.newMatch({ mode: mode === "little" ? "little" : "normal", kidTeam: kt, ruaTeam: rt, kidHelp: d.help, ruaHelp, kidGrow, ruaGrow, rng, auto: true });
-  M.sides[0].manual = true; M.kind = mode; evIdx = M.events.length; busy = false; R = "match"; VIEW = 0; matchCfg.mine = [myId(), null];
+  const first = await firstMoment(mode, kt, rt);
+  M = P.newMatch({ mode: mode === "little" ? "little" : "normal", kidTeam: kt, ruaTeam: rt, kidHelp: d.help, ruaHelp, kidGrow, ruaGrow, rng, auto: false, first });
+  M.sides[0].manual = true; M.kind = mode; evIdx = first === 1 ? 0 : M.events.length; busy = first === 1; R = "match"; VIEW = 0; matchCfg.mine = [myId(), null];
   const rf = C[rt[0]];
-  M.msg = mode === "little" ? `Rua brought ${rf.name}! Tap a move.` : `Rua's ${rf.name} is out front.`;
+  M.msg = first === 1 ? `Rua goes first. Rua's ${rf.name} is out front.` : mode === "little" ? `Rua brought ${rf.name}! Tap a move.` : `Rua's ${rf.name} is out front.`;
   render(); speak(M.msg); SFX.tap();
   maybeIntro(M.mode === "little" ? "little" : "normal");
+  if (first === 1) (async () => { await wait(900); while (R === "match" && $("#ovl") && $("#ovl").innerHTML) await wait(300); if (R === "match") playEvents(); })();
 }
 function growDeck(d, kt) { const own = Object.keys(d.own).filter(x => d.own[x] && C[x]); return own.filter(x => !kt.includes(x) && kt.some(b => C[b].line === C[x].line && C[b].stage < C[x].stage)); }
 function withKid(k, fn) { const keep = kid; kid = k; try { return fn(); } finally { kid = keep; } }
@@ -1271,6 +1308,12 @@ function spendSockets(side, n) {
     anim(g, [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.8)", opacity: 1, offset: .3 }, { transform: "translate(50px,-26px) scale(.2)", opacity: 0 }], { duration: 520, delay: i * 90, fill: "forwards" });
     const p = host && spot(g, host); if (p) setTimeout(() => burst(host, p.x, p.y, "#2fbf71", 5, 34), i * 90);
   });
+}
+function lightSocket(side, type, match) {
+  const sk = $("#sk" + side); if (!sk) return null;
+  const el = [...sk.querySelectorAll(".sk")].find(x => !x.classList.contains("on")); if (!el) return null;
+  el.className = "sk on" + (match ? " match" : ""); el.style.setProperty("--g", GEMCOL[type]);
+  el.innerHTML = `<i style="background:${GEMCOL[type]}"></i><img src="img/gem-${GEMIMG[type]}.png" alt="">`; return el;
 }
 function dropGem(el, col) {
   const host = $("#mat"); if (!el || !host) return;
@@ -1476,16 +1519,25 @@ async function showEvent(e) {
     if (row) row.classList.remove("fired");
     await wait(250);
   } else if (e.t === "puffed") {
-    const d = $("#spr" + e.side), dc = $(e.side === VIEW ? "#kA" : "#rA"); if (d) d.src = img(e.who, "tired");
-    setMsg(`${nameOf(e.side, e.who)} is puffed out and goes to rest.`, true);
+    const mine = e.side === VIEW, nm = nameOf(e.side, e.who), left = M.sides[e.side].mons.filter(x => !x.out).length;
+    const d = $("#spr" + e.side), dc = $(mine ? "#kA" : "#rA"); if (d) d.src = img(e.who, "tired");
+    setMsg(little ? `${nm} needs a rest.${mine ? " Well done!" : ""}` : `${nm} is puffed out and goes for a rest.${mine ? " Well done!" : ""}`, true);
     SFX.soft(); await wait(900);
     if (d) d.src = img(e.who, "asleep");
     if (dc) {
       const st = document.createElement("div"); st.className = "stamp"; st.textContent = "💤 PUFFED OUT"; dc.appendChild(st);
       anim(st, [{ transform: "scale(2.2)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 300, easing: "ease-out" });
-      anim(dc, [{ transform: "none", filter: "none", opacity: 1 }, { transform: `translateY(${(e.side === VIEW ? 1 : -1) * 14}px) scale(.96)`, filter: "grayscale(1) brightness(.6)", opacity: 0 }], { duration: 1000, delay: 600, fill: "forwards", easing: "ease-in" });
+      anim(dc, [{ transform: "none", filter: "none", opacity: 1 }, { transform: `translateY(${(mine ? 1 : -1) * 14}px) scale(.96)`, filter: "grayscale(1) brightness(.6)", opacity: 0 }], { duration: 1000, delay: 600, fill: "forwards", easing: "ease-in" });
+      zzz(dc, 3);
     }
-    await wait(1800);
+    await wait(1100);
+    markLeft(e);
+    if (left > 0) {
+      const lt = left === 1 ? (mine ? "Last Púca! You can do it!" : `${ownerName(e.side)}'s last Púca!`) : little ? `${left} left!` : `${left} Púcas left`;
+      popText(lt, mine ? "" : "r"); SFX.card();
+      setMsg(left === 1 ? (mine ? "You have one Púca left. You can do it!" : `${ownerName(e.side)} has one Púca left.`) : (mine ? `You have ${left} Púcas left.` : `${ownerName(e.side)} has ${left} Púcas left.`), true);
+      await wait(1900);
+    } else await wait(900);
   } else if (e.t === "out") { renderMatch(); enterCard(e.side); setMsg(`${nameOf(e.side, e.who)} comes out front!`, true); SFX.card(); await wait(1300); }
   else if (e.t === "swap") { renderMatch(); enterCard(e.side); setMsg(`${nameOf(e.side, e.who)} comes out front!`, true); SFX.card(); await wait(1300); }
   else if (e.t === "help") {
@@ -1503,9 +1555,11 @@ async function showEvent(e) {
     renderMatch(); if (e.heal) floatAt(e.side, "+" + e.heal, true); if (e.hit) { floatAt(1 - e.side, "−" + e.hit); SFX.hit(); }
     e.gem ? SFX.gem() : SFX.card(); setMsg(t, true); await wait(1400);
   } else if (e.t === "attach") {
-    renderMatch(); SFX.gem();
+    /* An automatic gem is placed in the same moment as the move or swap that follows it, so the board
+       already shows the moment before: light one socket instead of redrawing a board that is ahead of the story. */
+    if (!e.auto) renderMatch(); SFX.gem();
     const gcol = GEMCOL[H[e.card].gem] || "#fff", isFront = e.at === M.sides[e.side].front;
-    if (isFront) { const on = [...document.querySelectorAll(`#sk${e.side} .sk.on`)]; dropGem(on[on.length - 1], gcol); }
+    if (isFront) { const lit = e.auto ? lightSocket(e.side, H[e.card].gem, e.match) : null, on = [...document.querySelectorAll(`#sk${e.side} .sk.on`)]; dropGem(lit || on[on.length - 1], gcol); }
     else { const w = document.querySelector(`.wcard[data-side="${e.side}"][data-i="${e.at}"]`), host = $("#mat"); if (w) { anim(w, [{ scale: "1" }, { scale: "1.35" }, { scale: "1" }], { duration: 560 }); if (host) setTimeout(() => { const p = spot(w, host); burst(host, p.x, p.y, gcol, 10, 46); ringAt(host, p.x, p.y, gcol); }, REDUCE() ? 0 : 250); } }
     setMsg(e.token ? `${e.side === VIEW ? "Your" : ownerName(e.side) + "'s"} gem went on ${C[e.who].name}!${e.match ? " 💎 +10!" : ""}` : `${who(e.side)} put ${H[e.card].name} on ${C[e.who].name}!${e.match ? " 💎 +10!" : ""}`, e.side === VIEW);
     await wait(e.auto ? 600 : e.side === VIEW ? 1200 : 1000);
@@ -1530,6 +1584,83 @@ async function drawPop(got) {
   await new Promise(r => { const t = setTimeout(r, 2280); ov.querySelector(".drawpop").onclick = () => { clearTimeout(t); r(); }; });
   ov.innerHTML = "";
 }
+/* ---------- turn moments (step 4) ---------- */
+const ruaAv = px => `<span class="av" style="background-image:url(img/av/rua.jpg);width:${px}px;height:${px}px;border-width:2px" role="img" aria-label="Rua the red squirrel"></span>`;
+/* A pixel-art Punt coin: round gold with a dark rim, and a harp or a hare in the middle */
+const HARP_PX = [".X..........", ".XX.........", ".X.X........", ".X.XX.......", ".X.X.XX.....", ".X.X.X.X....", ".X.X.X.XX...", ".X.X.X.X.X..", ".X.X.X.X.XX.", ".X.X.X.X.XX.", ".X.X.X.X.XX.", ".XXXXXXXXXX."];
+const HARE_PX = ["..XXX....XXX..", "..XXX....XXX..", "..XXX....XXX..", "..XXX....XXX..", "..XXXX..XXXX..", "..XXXXXXXXXX..", "..XXXXXXXXXX..", "..XX.XXXX.XX..", "..XXXXXXXXXX..", "..XXXX..XXXX..", "...XXXXXXXX...", "....XXXXXX...."];
+function pxCoin(bits) {
+  const N = 26, c = (N - 1) / 2; let h = "";
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const d = Math.hypot(x - c, y - c); if (d > 12.9) continue;
+    const col = d > 11.6 ? "#7a5410" : d > 10.2 ? "#e8b93a" : (x + y < 16 ? "#ffe9a0" : x + y > 34 ? "#c9961f" : "#f2c94c");
+    h += `<rect x="${x}" y="${y}" width="1" height="1" fill="${col}"/>`;
+  }
+  const w = bits[0].length, ox = Math.round((N - w) / 2), oy = 2;
+  bits.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === "X") h += `<rect x="${ox + x}" y="${oy + y}" width="1" height="1" fill="#6b4a0e"/>`; }));
+  return `<svg class="pxcoin" viewBox="0 0 ${N} ${N}" aria-hidden="true">${h}</svg>`;
+}
+const SECOND_NOTE = "Going second gets a bonus gem and an extra card.";
+/* Who goes first? Little: you do, always. Other matches: flip the Punt with Rua. Returns 0 (you) or 1 (Rua). */
+async function firstMoment(mode, kt, rt) {
+  const little = mode === "little", ov = $("#ovl"); busy = true;
+  let first = 0;
+  if (little) {
+    ov.innerHTML = `<div class="hand-over moment little" role="dialog" aria-label="You go first"><h1>Let's play!</h1><div class="pair"><img src="${img(kt[0], "happy")}" alt=""><img src="${img(rt[0], "happy")}" alt="" style="transform:scaleX(-1)"></div><div class="big in">You go first!</div><button class="btn" id="goBtn">Let's go!</button></div>`;
+    SFX.win(); speak("Let's play! You go first!");
+  } else {
+    first = Math.random() < .5 ? 0 : 1; const spins = 6 + first;
+    ov.innerHTML = `<div class="hand-over punt moment" role="dialog" aria-label="Who goes first?"><h1>Who goes first?</h1><p class="note">Flip the Punt! You are the harp side. Rua is the hare side.</p>
+      <div class="coinwrap"><div class="coin" id="coin"><div class="cf">${pxCoin(HARP_PX)}${avatarHTML(kid, false, 42)}</div>
+      <div class="cb">${pxCoin(HARE_PX)}${ruaAv(42)}</div></div></div>
+      <button class="btn" id="flipBtn">Flip it!</button><div class="big" id="firstBig" role="status"></div><p class="note" id="firstNote"></p><button class="btn" id="goBtn" hidden>Let's play!</button></div>`;
+    speak("Who goes first? Flip the Punt! You are the harp. Rua is the hare.");
+    await new Promise(res => { $("#flipBtn").onclick = () => res(); });
+    $("#flipBtn").hidden = true; SFX.tap();
+    const c = $("#coin");
+    if (REDUCE()) { c.style.transition = "none"; c.style.transform = `rotateX(${spins * 180}deg)`; await wait(300); }
+    else {
+      c.style.transform = `translateY(-160px) rotateX(${spins * 180}deg)`;
+      for (let i = 0; i < 6; i++) { blip([520 + i * 60], "square", .05); await wait(170); }
+      await wait(1100);
+      c.style.transition = "transform .4s ease-out"; c.style.transform = `translateY(0) rotateX(${spins * 180}deg)`;
+      await wait(500);
+    }
+    /* land flat and round: show exactly the harp face or the hare face */
+    c.style.transition = "none"; c.style.transform = "none"; c.style.transformStyle = "flat"; c.parentElement.style.perspective = "none"; if (first === 1) c.classList.add("hare");
+    SFX.win();
+    const big = first === 0 ? "You go first!" : "Rua goes first!", note = first === 0 ? "Rua goes second, so Rua gets a bonus gem and an extra card." : "You go second, so you get a bonus gem and an extra card!";
+    const b = $("#firstBig"); b.textContent = big; b.classList.add("in"); $("#firstNote").textContent = note; $("#goBtn").hidden = false;
+    speak(`${first === 0 ? "Harp" : "Hare"}! ${big} ${note}`);
+  }
+  await new Promise(res => { $("#goBtn").onclick = () => res(); });
+  ov.innerHTML = ""; busy = false;
+  return first;
+}
+function popText(text, cls) {
+  const host = $("#mat"); if (!host) return null;
+  const e = document.createElement("div"); e.className = "leftpop " + (cls || ""); e.innerHTML = `<b>${esc(text)}</b>`; host.appendChild(e);
+  anim(e.firstChild, [{ transform: "scale(.4)", opacity: 0 }, { transform: "scale(1.08)", opacity: 1, offset: .6 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: "ease-out" });
+  setTimeout(() => e.remove(), 2400); return e;
+}
+function zzz(card, n) {
+  const host = $("#mat"); if (!host || !card) return; const p = spot(card, host);
+  for (let i = 0; i < n; i++) { const z = document.createElement("i"); z.className = "zzz"; z.textContent = i % 2 ? "z" : "Z"; z.style.left = (p.x - 14 + i * 18) + "px"; z.style.top = (p.y - 20) + "px"; z.style.animationDelay = (i * 380) + "ms"; host.appendChild(z); setTimeout(() => z.remove(), 2800 + i * 380); }
+}
+/* A Púca goes to rest: its team dot goes hollow with a little pop, then we say how many are left. */
+function markLeft(e) {
+  const host = $("#mat"), s = M.sides[e.side]; if (!host) return;
+  const old = host.querySelector(`.side2[data-side="${e.side}"] .dots`); if (!old) return;
+  old.outerHTML = teamDots(s);
+  const now = host.querySelector(`.side2[data-side="${e.side}"] .dots`), mi = s.mons.findIndex(x => x.id === e.who);
+  if (now && now.children[mi]) now.children[mi].classList.add("pop");
+}
+async function endBeat() {
+  if (!M || !M.over || !$("#mat")) return;
+  const w = M.over.winner, little = M.mode === "little";
+  popText(matchCfg.hvh ? `🏆 ${ownerName(w)} wins!` : little ? "🎉 Hooray!" : w === 0 ? "🏆 You win!" : "👏 Good match!", w === 0 || little ? "" : "r");
+  await wait(REDUCE() ? 900 : 1500);
+}
 async function playEvents() {
   busy = true;
   while (evIdx < M.events.length) {
@@ -1538,8 +1669,8 @@ async function playEvents() {
     await showEvent(e);
     if (R !== "match") return;
   }
-  if (M.over) return finishMatch();
-  if (M.pick === VIEW) { M.msg = "Puffed out! Tap a waiting Púca to send it out."; busy = false; renderMatch(); speak(M.msg); return; }
+  if (M.over) { await endBeat(); if (R !== "match") return; return finishMatch(); }
+  if (M.pick === VIEW) { M.msg = M.mode === "little" ? "Your Púca needs a rest. Who comes out next? Tap one!" : "Your Púca needs a rest. Who comes out next? Tap a waiting Púca."; busy = false; renderMatch(); speak(M.msg); return; }
   if (!matchCfg.hvh && M.turn === 1) { renderMatch(); await wait(500); if (R !== "match") return; P.aiStep(M); return playEvents(); }
   busy = false; renderMatch();
 }
@@ -1587,9 +1718,17 @@ function resultHTML() {
   if (r.hvh) return `<div class="gate"><div class="row" style="justify-content:center;gap:30px">${avatarHTML(r.w, true)}${avatarHTML(r.l, true)}</div><h1>${r.w} wins!</h1><p style="font-size:22px">Well played, ${r.l}! Everyone cheers!</p>
     <div class="panel">⭐ ${C[P.myCard(S.kids[r.w].puca, level(r.w))].name} gets <b>${P.WIN_POINTS} points</b> in Púcas Cara.${r.lvlUp ? `<br>Level ${r.lvlUp}!` : ""}</div>${sayBtn(r.w + " wins! Well played, " + r.l + "!")}
     <div style="margin-top:16px"><button class="btn" data-act="hvhgo">Play again</button><button class="btn alt" data-act="go" data-r="home" style="margin-top:10px">Home</button></div></div>`;
-  let h = `<div class="gate">`;
-  if (r.little) h += `<div class="row" style="justify-content:center;gap:30px"><img class="cheer" src="${img(matchCfg.kt[0], "happy")}" alt="" style="height:140px"><img class="cheer" src="${img(rua, "happy")}" alt="" style="height:140px;transform:scaleX(-1)"></div><h1>${r.won ? "You won!" : "Hooray!"}</h1><p style="font-size:24px">${r.won ? "Everyone cheers!" : "What a match! Everyone cheers!"}</p>`;
-  else h += `<img class="${r.won ? "cheer" : ""}" src="${img(matchCfg.kt[0], r.won ? "happy" : "tired")}" alt=""><h1>${r.won ? "You won!" : "Good match!"}</h1><p style="font-size:21px">${r.won ? "Brilliant playing!" : "Rua's Púcas won this time. Your Púcas are having a rest."}</p><div class="row" style="justify-content:center;gap:10px;align-items:center"><img src="img/rua-front.png" alt="Rua the red squirrel" style="height:110px"><p style="margin:0;font-size:18px;text-align:left">${r.won ? "Rua: “Well played! You're a true Maor!”" : "Rua: “Good game! Fancy another?”"}</p></div>`;
+  const little = r.little, won = r.won, ms = M.events.filter(x => x.t === "move" && x.side === 0 && x.dmg);
+  const best = ms.reduce((o, x) => !o || x.dmg > o.dmg ? x : o, null);
+  const fig = (id, pose, i, cheer) => `<figure><img class="${cheer ? "cheer" : ""}" style="animation-delay:${i * 140}ms" src="${img(id, pose)}" alt=""><figcaption>${C[id].name}</figcaption></figure>`;
+  const mine = matchCfg.kt, theirs = matchCfg.rt, cheerMine = little || won;
+  let h = `<div class="gate${little ? " little" : ""}">`;
+  h += `<h1>${little ? (won ? "You won!" : "Hooray!") : won ? "You won!" : "Good match!"}</h1><p style="font-size:${little ? 25 : 21}px">${little ? (won ? "Everyone cheers!" : "What a match! Everyone cheers!") : won ? "Brilliant playing!" : "Rua's Púcas won this time. Your Púcas are having a rest."}</p>`;
+  h += `<div class="endteam" aria-label="Your team">${mine.map((id, i) => fig(id, cheerMine ? "happy" : "asleep", i, cheerMine)).join("")}</div>`;
+  if (little) h += `<div class="endteam rua" aria-label="Rua's team">${theirs.map((id, i) => fig(id, "happy", i + 3, true)).join("")}</div>`;
+  else h += `<div class="endscore" role="img" aria-label="Púcas left: you ${M.sides[0].mons.filter(x => !x.out).length}, Rua ${M.sides[1].mons.filter(x => !x.out).length}"><span>You</span>${teamDots(M.sides[0])}<span>Rua</span>${teamDots(M.sides[1])}</div>`
+    + `<div class="endstats"><span>⏱ ${M.round} round${M.round === 1 ? "" : "s"}</span>${best ? `<span>💥 Biggest move: ${best.move} −${best.dmg}</span>` : ""}</div>`
+    + `<div class="row" style="justify-content:center;gap:10px;align-items:center"><img src="img/rua-front.png" alt="Rua the red squirrel" style="height:96px"><p style="margin:0;font-size:18px;text-align:left">${won ? "Rua: “Well played! You're a true Maor!”" : "Rua: “Good game! Fancy another?”"}</p></div>`;
   if (r.won) h += `<div class="panel">⭐ ${C[myId()].name} gets <b>${P.WIN_POINTS} points</b> in Púcas Cara.${r.lvlUp ? `<br>Level ${r.lvlUp}!` : ""}${r.grew ? `<br>✨ ${C[r.grew.from].name} grew into <b>${C[r.grew.to].name}</b>!` : ""}</div>`;
   const again = M.kind === "little" ? `data-act="play" data-m="little"` : `data-act="setup" data-m="${M.kind}"`;
   return h + sayBtn(resultSpeech()) + `<div style="margin-top:16px"><button class="btn" ${again}>Play again</button><button class="btn alt" data-act="go" data-r="home" style="margin-top:10px">Home</button></div></div>`;

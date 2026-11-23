@@ -260,7 +260,6 @@ h1{font-size:30px}h2{font-size:22px}
 .drawpop h2{color:var(--gold);margin:0}.drawpop .dcards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .drawpop .dc{position:relative;animation:dcIn .5s cubic-bezier(.2,1.4,.4,1) both}.drawpop .dc .tcw{zoom:.62}
 @keyframes dcIn{from{transform:translateY(120px) scale(.6) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
-.newrib{position:absolute;left:2px;top:22px;transform:rotate(-12deg);background:#e8453c;color:#fff;font-family:'Pixelify Sans',monospace;font-size:12px;padding:2px 8px;border:2px solid #000;z-index:3;animation:newp 1s ease-in-out infinite}
 @keyframes newp{50%{transform:rotate(-12deg) scale(1.2)}}
 .fbar{display:flex;flex-direction:column;gap:6px;margin:0 0 10px;padding:8px;background:#1c1a2e;border:2px solid #4a4370;border-top:0}
 .ftog{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:6px 12px;margin:4px 0 0;background:#232040;border:2px solid #4a4370;color:#f3e6cc;font-family:inherit;font-size:16px;cursor:pointer;text-align:left}
@@ -316,12 +315,24 @@ h1{font-size:30px}h2{font-size:22px}
 .target:after{content:attr(data-tip);position:absolute;left:50%;top:-30px;transform:translateX(-50%);background:var(--gold);color:#241a05;font-weight:700;font-size:14px;padding:2px 8px;white-space:nowrap;z-index:9;font-family:'Andika',sans-serif}
 #mat.target:after{top:auto;bottom:50%}
 @keyframes tgt{50%{outline-color:#fff4d6}}
-.tagto{position:absolute;top:-10px;right:-8px;z-index:3;display:flex;align-items:center;gap:1px;background:#1c1a2e;border:2px solid var(--gold);border-radius:14px;padding:1px 5px 1px 3px;font-size:13px;color:var(--gold);font-weight:700}
-.tagto img{height:22px}
-.growrib{position:absolute;top:44%;left:-4px;right:-4px;z-index:3;background:#2fa36b;color:#fff;font-weight:700;font-size:13px;text-align:center;border:2px solid #05210f}
-.waitrib{position:absolute;top:44%;left:-4px;right:-4px;z-index:3;background:#7a5a9e;color:#fff;font-weight:700;font-size:13px;text-align:center;border:2px solid #000}
+.growrib{position:absolute;top:44%;left:-4px;right:-4px;z-index:3;background:#1f7a4d;color:#fff;font-weight:700;font-size:15px;text-align:center;border:2px solid #05210f}
 .hfan{display:flex;justify-content:center;align-items:flex-end;height:178px;padding-top:24px;position:relative}
 .hfan .lbl{position:absolute;left:0;top:0;font-size:13px;color:var(--soft)}
+/* v29: labels for the cards in your hand sit in a strip above the cards, so no card can cover them.
+   Big, plain (Andika, never the pixel font) and high contrast; short forms when the hand is crowded. */
+.flsrc{display:none}
+.flabs{position:absolute;left:0;right:0;top:22px;z-index:5;pointer-events:none}
+.flab{position:absolute;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'Andika',sans-serif;font-weight:700;font-size:15px;line-height:22px;padding:1px 8px;background:#1c1a2e;color:#fff6de;border:2px solid var(--gold);border-radius:14px}
+.flab img{height:22px;display:block}
+.flline{position:absolute;width:2px;background:var(--gold);opacity:.7;border-radius:1px}
+.flab b{font-weight:700;color:#fff;border-radius:8px;padding:0 6px;margin-left:-4px}
+.flab b:only-child{margin:0 -4px}
+.flab .fl-new{background:#b3261e}
+.flab .fl-grow{background:#1f7a4d}
+.flab .fl-wait{background:#5e4485}
+.flabs .st{display:none}
+.flabs.compact .lt{display:none}
+.flabs.compact .st{display:inline}
 .hfan>button{position:relative;transform-origin:50% 130%;transition:transform .2s}
 .hfan>button .tcw{zoom:.42}
 .hfan>button.dim .tcw{filter:brightness(.6)}
@@ -1005,13 +1016,13 @@ function vsTag(a, b, pos) { const v = vsOf(a, b); return v === "even" ? "" : `<s
 function miniVs(a, b) { const v = vsOf(a, b); return v === "even" ? "" : `<span class="mini-vs" aria-label="${v}">${v === "strong" ? "💪" : "😟"}</span>`; }
 function tagTo(i) {
   const s = M.sides[VIEW], k = s.hand[i];
-  if (P.isGrow(k)) { const t = P.growTargets(M, i, VIEW); return t.length ? `<span class="tagto">↑<img src="${img(s.mons[t[0]].id)}" alt=""></span>` : `<span class="tagto">✋</span>`; }
-  if (P.isGem(k) && M.mode === "normal") return `<span class="tagto">→ any Púca</span>`;
+  if (P.isGrow(k)) { const t = P.growTargets(M, i, VIEW); return `<b class="fl-grow"><span class="lt">GROW </span>↑</b>` + (t.length ? `<img src="${img(s.mons[t[0]].id)}" alt="">` : "✋"); }
+  if (P.isGem(k) && M.mode === "normal") return `→ <span class="lt">any Púca</span><span class="st">any</span>`;
   const t = P.TARGET[k];
-  if (t === "bench") { const b = P.damagedBench(s); return b >= 0 ? `<span class="tagto">→<img src="${img(s.mons[b].id)}" alt=""></span>` : `<span class="tagto">✋</span>`; }
-  if (t === "mine") return `<span class="tagto">→<img src="${img(P.front(s).id)}" alt=""></span>`;
-  if (t === "theirs") return `<span class="tagto">→<img src="${img(P.front(M.sides[1 - VIEW]).id)}" alt="" style="transform:scaleX(-1)"></span>`;
-  return `<span class="tagto">✨</span>`;
+  if (t === "bench") { const b = P.damagedBench(s); return b >= 0 ? `→<img src="${img(s.mons[b].id)}" alt="">` : `✋`; }
+  if (t === "mine") return `→<img src="${img(P.front(s).id)}" alt="">`;
+  if (t === "theirs") return `→<img src="${img(P.front(M.sides[1 - VIEW]).id)}" alt="" style="transform:scaleX(-1)">`;
+  return `✨`;
 }
 function renderMatch() {
   const app = $("#app"), little = M.mode === "little", L = little ? "B" : opts().layout;
@@ -1062,10 +1073,10 @@ function renderMatch() {
       const st = `transform:rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * (n > 3 ? 6 : 9)}px);margin:0 ${ov}px`;
       if (it.hand) {
         const k = it.k, g = P.isGrow(k), dim = !myTurn || (g ? ks.grew : ks.helpUsed);
-        return `<button class="${dim ? "dim" : ""}" style="${st}" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}${g ? '<span class="growrib">GROW ↑</span>' : ""}${isNew[it.i] ? '<span class="newrib">NEW</span>' : ""}${tagTo(it.i)}</button>`;
+        return `<button class="${dim ? "dim" : ""}" style="${st}" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}<span class="flsrc">${isNew[it.i] ? '<b class="fl-new">NEW</b>' : ""}${tagTo(it.i)}</span></button>`;
       }
       const o = it.o;
-      return `<button style="${st}" data-act="holdboard" data-side="${VIEW}" data-i="${o.i}" ${o.x.out ? "" : `data-drag="bench" data-mon="${o.i}"`}>${tcard(o.x.id)}${pips(o.x, true)}<span class="waitrib">${o.x.out ? "RESTING" : "WAITING"}</span>${o.x.out ? "" : miniVs(o.x.id, rf.id)}</button>`;
+      return `<button style="${st}" data-act="holdboard" data-side="${VIEW}" data-i="${o.i}" ${o.x.out ? "" : `data-drag="bench" data-mon="${o.i}"`}>${tcard(o.x.id)}${pips(o.x, true)}<span class="flsrc"><b class="fl-wait">${o.x.out ? '<span class="lt">RESTING</span><span class="st">REST</span>' : '<span class="lt">WAITING</span><span class="st">WAIT</span>'}</b></span>${o.x.out ? "" : miniVs(o.x.id, rf.id)}</button>`;
     }).join("") : '<span class="sub">No cards in your hand</span>') + `</div>`;
     if (L === "B" && kb.length) h += `<div class="waitrow"><span class="lbl">Waiting:</span>${kb.map(o => mini(VIEW, o, "")).join("")}</div>`;
     const stuck = myTurn && ![0, 1].some(i => P.canMove(M, i)) && !ks.hand.some((_, i) => !P.helpBlock(M, i));
@@ -1086,10 +1097,43 @@ function fitFan() {
   const apply = () => bs.forEach((b, j) => { b.style.transform = `rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * lift}px)`; b.style.marginLeft = b.style.marginRight = ov + "px"; });
   for (let t = 0; t < 20; t++) {
     let lo = Infinity, hi = -Infinity; bs.forEach(b => { const r = b.getBoundingClientRect(); lo = Math.min(lo, r.left); hi = Math.max(hi, r.right); });
-    if (lo >= L && hi <= R) return;
-    if (ov > -cw * 0.38) ov = Math.max(-cw * 0.38, ov - 4); else if (step > 2) { step--; lift = Math.max(3, lift - 1); } else return;
+    if (lo >= L && hi <= R) break;
+    if (ov > -cw * 0.38) ov = Math.max(-cw * 0.38, ov - 4); else if (step > 2) { step--; lift = Math.max(3, lift - 1); } else break;
     apply();
   }
+  placeLabels(fan, bs);
+}
+/* v29: the labels strip above the hand. Each label sits over the part of its card you can see.
+   Tries one row, then two staggered rows, then the short words (and a third row if needed), so labels never overlap or leave the screen. */
+function placeLabels(fan, bs) {
+  fan.querySelectorAll(".flabs").forEach(x => x.remove()); fan.style.paddingTop = fan.style.height = "";
+  const src = bs.map(b => b.querySelector(".flsrc")).map(s => s && s.innerHTML.trim() ? s : null);
+  if (!src.some(Boolean)) return;
+  const box = fan.getBoundingClientRect(), W = box.width, rects = bs.map(b => b.getBoundingClientRect());
+  const layer = document.createElement("div"); layer.className = "flabs"; fan.appendChild(layer);
+  const items = [];
+  bs.forEach((b, j) => { if (!src[j]) return; const r = rects[j], right = j < bs.length - 1 ? Math.max(r.left + 12, Math.min(r.right, rects[j + 1].left)) : r.right;
+    const el = document.createElement("span"); el.className = "flab"; el.innerHTML = src[j].innerHTML; el.setAttribute("aria-hidden", "true"); layer.appendChild(el);
+    items.push({ el, j, cx: (r.left + right) / 2 - box.left }); });
+  const ROW = 28;
+  const lay = rows => { let ok = true;
+    for (let row = 0; row < rows; row++) {
+      const its = items.filter((_, i) => i % rows === row); let edge = 0;
+      its.forEach(it => { const w = it.el.offsetWidth; it.w = w; it.x = Math.max(edge, Math.min(W - w, it.cx - w / 2)); edge = it.x + w + 4; });
+      if (edge - 4 > W) ok = false;
+      let back = W; [...its].reverse().forEach(it => { it.x = Math.min(it.x, back - it.w); back = it.x - 4; if (it.x < 0) ok = false; });
+      its.forEach(it => { if (Math.abs(it.x + it.w / 2 - it.cx) > Math.max(30, it.w / 2)) ok = false; it.el.style.left = it.x + "px"; it.el.style.top = row * ROW + "px"; });
+    }
+    return ok; };
+  let rows = 1;
+  if (!lay(1)) { rows = 2; if (!lay(2)) { layer.classList.add("compact"); if (!lay(2)) { rows = 3; lay(3); } } }
+  const extra = rows * ROW + 4;
+  fan.style.paddingTop = 24 + extra + "px"; fan.style.height = 178 + extra + "px";
+  if (rows > 1 || items.some(it => Math.abs(it.x + it.w / 2 - it.cx) > 6)) { // a thin line from each label down to its card
+    const lt = layer.getBoundingClientRect().top;
+    items.forEach(it => { const top = parseFloat(it.el.style.top) + 12, ln = document.createElement("i"); ln.className = "flline";
+      const cardTop = bs[it.j].getBoundingClientRect().top - lt;
+      ln.style.left = (it.cx - 1) + "px"; ln.style.top = top + "px"; ln.style.height = Math.max(0, cardTop + 6 - top) + "px"; layer.insertBefore(ln, layer.firstChild); }); }
 }
 addEventListener("resize", fitFan);
 function whereText(j) {

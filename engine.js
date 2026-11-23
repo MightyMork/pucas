@@ -357,7 +357,18 @@
     if (r.shield) ev.shield = true;
     m.events.push(ev);
     checkPuffed(m, si);
-    if (!m.over) endTurn(m);
+    if (!m.over) { if (m.pick != null) m.pickEnd = true; else endTurn(m); }
+    return ev;
+  }
+  /* A side marked manual chooses its own next Púca when the front one is puffed out. */
+  function pickNext(m, to) {
+    if (m.pick == null || m.over) return null;
+    var si = m.pick, o = m.sides[si], x = o.mons[to];
+    if (!x || x.out || to === o.front) return null;
+    o.front = to; o.guard = 0; o.shield = false; m.pick = null;
+    var ev = { t: "out", side: si, who: x.id };
+    m.events.push(ev);
+    if (m.pickEnd) { m.pickEnd = false; endTurn(m); }
     return ev;
   }
   function checkPuffed(m, si) {
@@ -367,6 +378,8 @@
     m.events.push({ t: "puffed", side: 1 - si, who: target.id });
     var next = -1;
     for (var i = 0; i < o.mons.length; i++) if (!o.mons[i].out) { next = i; break; }
+    var alive = o.mons.filter(function (x) { return !x.out; }).length;
+    if (next >= 0 && alive >= 2 && o.manual) { m.pick = 1 - si; m.events.push({ t: "choose", side: 1 - si }); return; }
     if (next < 0) { m.over = { winner: si }; m.events.push({ t: "win", side: si }); }
     else { o.front = next; o.guard = 0; o.shield = false; m.events.push({ t: "out", side: 1 - si, who: o.mons[next].id }); }
   }
@@ -584,7 +597,7 @@
     stageFor: stageFor, myCard: myCard, others: others, starterDeck: starterDeck, packPath: packPath, packContents: packContents,
     packsToLegendary: packsToLegendary, packsToPuca: packsToPuca, packsAhead: packsAhead, waitingFor: waitingFor, madeIds: madeIds, FAMILIES: FAMILIES, TOTAL_PUCAS: TOTAL_PUCAS, PACK_SIZE: PACK_SIZE, helpList: helpList, shuffle: shuffle,
     ruaTeam: ruaTeam, ruaLittle: ruaLittle, newMatch: newMatch, front: front, card: card, dmgFor: dmgFor,
-    canMove: canMove, useMove: useMove, canSwap: canSwap, swap: swap, helpBlock: helpBlock, playHelp: playHelp,
+    canMove: canMove, useMove: useMove, canSwap: canSwap, pickNext: pickNext, swap: swap, helpBlock: helpBlock, playHelp: playHelp,
     pass: pass, benchAlive: benchAlive, aiNext: aiNext, aiStep: aiStep };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else root.PUCAS = API;
 })(this);

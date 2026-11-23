@@ -316,21 +316,6 @@ h1{font-size:30px}h2{font-size:22px}
 .growrib{position:absolute;top:44%;left:-4px;right:-4px;z-index:3;background:#1f7a4d;color:#fff;font-weight:700;font-size:15px;text-align:center;border:2px solid #05210f}
 .hfan{display:flex;justify-content:center;align-items:flex-end;height:178px;padding-top:24px;position:relative}
 .hfan .lbl{position:absolute;left:0;top:0;font-size:13px;color:var(--soft)}
-/* v29: labels for the cards in your hand sit in a strip above the cards, so no card can cover them.
-   Big, plain (Andika, never the pixel font) and high contrast; short forms when the hand is crowded. */
-.flsrc{display:none}
-.flabs{position:absolute;left:0;right:0;top:22px;z-index:5;pointer-events:none}
-.flab{position:absolute;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:'Andika',sans-serif;font-weight:700;font-size:15px;line-height:22px;padding:1px 8px;background:#1c1a2e;color:#fff6de;border:2px solid var(--gold);border-radius:14px}
-.flab img{height:22px;display:block}
-.flline{position:absolute;width:2px;background:var(--gold);opacity:.7;border-radius:1px}
-.flab b{font-weight:700;color:#fff;border-radius:8px;padding:0 6px;margin-left:-4px}
-.flab b:only-child{margin:0 -4px}
-.flab .fl-new{background:#b3261e}
-.flab .fl-grow{background:#1f7a4d}
-.flab .fl-wait{background:#5e4485}
-.flabs .st{display:none}
-.flabs.compact .lt{display:none}
-.flabs.compact .st{display:inline}
 .hfan>button{position:relative;transform-origin:50% 130%;transition:transform .2s}
 .hfan>button .tcw{zoom:.42}
 .hfan>button.dim .tcw{filter:brightness(.6)}
@@ -528,6 +513,13 @@ h1{font-size:30px}h2{font-size:22px}
 .wcard.pick{animation:pickpulse 1.1s ease-in-out infinite;outline:3px solid #ffd54a;z-index:5}
 @keyframes pickpulse{50%{transform:scale(1.12)}}
 @media (prefers-reduced-motion:reduce){.wcard.pick{animation:none}}
+.target:after{display:none}
+.target{outline:4px solid var(--gold)!important;outline-offset:3px;box-shadow:0 0 13px 4px #ffd54a8f}
+.hfan>button.can{filter:drop-shadow(0 0 2px #ffd54ab3) drop-shadow(0 0 6px #ffd54ab3)}
+.hfan>button.can:not(:hover){animation:canp 1.6s ease-in-out infinite}
+@keyframes canp{50%{filter:drop-shadow(0 0 1px #ffd54a80) drop-shadow(0 0 4px #ffd54a80)}}
+@media (prefers-reduced-motion:reduce){.hfan>button.can{animation:none!important}}
+.cico{position:absolute;top:-6px;right:-4px;width:24px;height:24px;border-radius:50%;background:#1c1a2e;border:2px solid var(--gold);color:var(--gold);font:700 14px/20px 'Andika',sans-serif;text-align:center;z-index:3}
 /* layouts */
 .mat.lA{height:432px}
 .mat.lA .spr.k{left:4%;top:156px;bottom:auto}
@@ -1235,7 +1227,7 @@ function bigNum(side, text, cls) {
   anim(e, [{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }, { transform: "translate(-50%,-62%) scale(1.5)", opacity: 1, offset: .22 }, { transform: "translate(-50%,-72%) scale(1)", opacity: 1, offset: .6 }, { transform: "translate(-50%,-150%) scale(1)", opacity: 0 }], { duration: 1250, easing: "ease-out" });
   setTimeout(() => e.remove(), 1300);
 }
-function banner(text, cls) { const host = $("#mat"); if (!host) return; const e = fxEl("banner " + (cls || ""), host, 0, 0, null, esc(text)); e.style.left = 0; e.style.top = "46%"; anim(e, [{ transform: "translate(-120%,-50%)", opacity: 0 }, { transform: "translate(0,-50%)", opacity: 1, offset: .14 }, { transform: "translate(0,-50%)", opacity: 1, offset: .82 }, { transform: "translate(120%,-50%)", opacity: 0 }], { duration: 2200, easing: "ease-in-out" }); setTimeout(() => e.remove(), 2250); }
+function banner(text, cls) { const mat = $("#mat"); if (!mat) return; const mr = mat.getBoundingClientRect(); const e = fxEl("banner " + (cls || ""), document.body, 0, 0, null, esc(text)); e.style.position = "fixed"; e.style.zIndex = 40; e.style.left = 0; e.style.top = (mr.top + mr.height * .46) + "px"; anim(e, [{ transform: "translate(-120%,-50%)", opacity: 0 }, { transform: "translate(0,-50%)", opacity: 1, offset: .14 }, { transform: "translate(0,-50%)", opacity: 1, offset: .82 }, { transform: "translate(120%,-50%)", opacity: 0 }], { duration: 3140, easing: "ease-in-out" }); setTimeout(() => e.remove(), 3190); }
 async function projectile(fromSide, toSide, type) {
   const host = $("#mat"), a = $("#spr" + fromSide), d = $("#spr" + toSide); if (!host || !a || !d || REDUCE()) return;
   const A = spot(a, host), D = spot(d, host), col = T[type].col;
@@ -1332,10 +1324,11 @@ function renderMatch() {
       const st = `transform:rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * (n > 3 ? 6 : 9)}px);margin:0 ${ov}px`;
       if (it.hand) {
         const k = it.k, g = P.isGrow(k), dim = !myTurn || (g ? ks.grew : ks.helpUsed);
-        return `<button class="${dim ? "dim" : ""}" style="${st}" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}<span class="flsrc">${isNew[it.i] ? '<b class="fl-new">NEW</b>' : ""}${tagTo(it.i)}</span></button>`;
+        const can = !dim && !P.helpBlock(M, it.i);
+        return `<button class="${dim ? "dim" : ""}${can ? " can" : ""}" style="${st}" data-act="holdhand" data-i="${it.i}" data-drag="help">${g ? tcard(k) : hcard(k)}${g ? '<span class="cico" aria-label="grows a Púca">↑</span>' : isNew[it.i] ? '<span class="cico" aria-label="new card">★</span>' : ""}</button>`;
       }
       const o = it.o;
-      return `<button style="${st}" data-act="holdboard" data-side="${VIEW}" data-i="${o.i}" ${o.x.out ? "" : `data-drag="bench" data-mon="${o.i}"`}>${tcard(o.x.id)}${pips(o.x, true)}<span class="flsrc"><b class="fl-wait">${o.x.out ? '<span class="lt">RESTING</span><span class="st">REST</span>' : '<span class="lt">WAITING</span><span class="st">WAIT</span>'}</b></span>${o.x.out ? "" : miniVs(o.x.id, rf.id)}</button>`;
+      return `<button style="${st}" data-act="holdboard" data-side="${VIEW}" data-i="${o.i}" ${o.x.out ? "" : `data-drag="bench" data-mon="${o.i}"`}>${tcard(o.x.id)}${pips(o.x, true)}${o.x.out ? "" : miniVs(o.x.id, rf.id)}</button>`;
     }).join("") : '<span class="sub">No cards in your hand</span>') + `</div>`;
     const stuck = myTurn && ![0, 1].some(i => P.canMove(M, i)) && !ks.hand.some((_, i) => !P.helpBlock(M, i));
     h += `<div class="actions"><button class="btn ${stuck ? "glowbtn" : "alt"} small" data-act="pass" ${myTurn ? "" : "disabled"}>${PX.save} ${stuck ? "Save up: end your turn" : "End turn (save gems)"}</button></div>
@@ -1359,39 +1352,6 @@ function fitFan() {
     if (ov > -cw * 0.38) ov = Math.max(-cw * 0.38, ov - 4); else if (step > 2) { step--; lift = Math.max(3, lift - 1); } else break;
     apply();
   }
-  placeLabels(fan, bs);
-}
-/* v29: the labels strip above the hand. Each label sits over the part of its card you can see.
-   Tries one row, then two staggered rows, then the short words (and a third row if needed), so labels never overlap or leave the screen. */
-function placeLabels(fan, bs) {
-  fan.querySelectorAll(".flabs").forEach(x => x.remove()); fan.style.paddingTop = fan.style.height = "";
-  const src = bs.map(b => b.querySelector(".flsrc")).map(s => s && s.innerHTML.trim() ? s : null);
-  if (!src.some(Boolean)) return;
-  const box = fan.getBoundingClientRect(), W = box.width, rects = bs.map(b => b.getBoundingClientRect());
-  const layer = document.createElement("div"); layer.className = "flabs"; fan.appendChild(layer);
-  const items = [];
-  bs.forEach((b, j) => { if (!src[j]) return; const r = rects[j], right = j < bs.length - 1 ? Math.max(r.left + 12, Math.min(r.right, rects[j + 1].left)) : r.right;
-    const el = document.createElement("span"); el.className = "flab"; el.innerHTML = src[j].innerHTML; el.setAttribute("aria-hidden", "true"); layer.appendChild(el);
-    items.push({ el, j, cx: (r.left + right) / 2 - box.left }); });
-  const ROW = 28;
-  const lay = rows => { let ok = true;
-    for (let row = 0; row < rows; row++) {
-      const its = items.filter((_, i) => i % rows === row); let edge = 0;
-      its.forEach(it => { const w = it.el.offsetWidth; it.w = w; it.x = Math.max(edge, Math.min(W - w, it.cx - w / 2)); edge = it.x + w + 4; });
-      if (edge - 4 > W) ok = false;
-      let back = W; [...its].reverse().forEach(it => { it.x = Math.min(it.x, back - it.w); back = it.x - 4; if (it.x < 0) ok = false; });
-      its.forEach(it => { if (Math.abs(it.x + it.w / 2 - it.cx) > Math.max(30, it.w / 2)) ok = false; it.el.style.left = it.x + "px"; it.el.style.top = row * ROW + "px"; });
-    }
-    return ok; };
-  let rows = 1;
-  if (!lay(1)) { rows = 2; if (!lay(2)) { layer.classList.add("compact"); if (!lay(2)) { rows = 3; lay(3); } } }
-  const extra = rows * ROW + 4;
-  fan.style.paddingTop = 24 + extra + "px"; fan.style.height = 178 + extra + "px";
-  if (rows > 1 || items.some(it => Math.abs(it.x + it.w / 2 - it.cx) > 6)) { // a thin line from each label down to its card
-    const lt = layer.getBoundingClientRect().top;
-    items.forEach(it => { const top = parseFloat(it.el.style.top) + 12, ln = document.createElement("i"); ln.className = "flline";
-      const cardTop = bs[it.j].getBoundingClientRect().top - lt;
-      ln.style.left = (it.cx - 1) + "px"; ln.style.top = top + "px"; ln.style.height = Math.max(0, cardTop + 6 - top) + "px"; layer.insertBefore(ln, layer.firstChild); }); }
 }
 addEventListener("resize", fitFan);
 function whereText(j) {
@@ -1521,14 +1481,14 @@ async function showEvent(e) {
     if (e.side === VIEW && !little && e.got && e.got.length) await drawPop(e.got);
     if (e.side === VIEW) { const names = (e.got || []).map(k => P.isGrow(k) ? C[k].name : H[k].name); setMsg(little ? "Your turn! Tap a move." : "Your turn! Pick a move or a card.", true); banner("YOUR TURN!"); if (little) gemPop(); }
     else { setMsg(ownerName(e.side) + "'s turn…", false); banner(ownerName(e.side).toUpperCase() + "'S TURN", "r"); }
-    await wait(e.side === VIEW ? 300 : 700);
+    await wait(e.side === VIEW ? 300 : 1700);
   }
 }
 async function drawPop(got) {
   const ov = $("#ovl"); if (!ov) return;
   ov.innerHTML = `<div class="drawpop" data-act="skipdraw"><h2>New card${got.length > 1 ? "s" : ""}!</h2><div class="dcards">${got.map((k, i) => `<div class="dc" style="animation-delay:${i * 220}ms">${P.isGrow(k) ? tcard(k) : hcard(k)}${P.isGrow(k) ? '<span class="growrib">GROW ↑</span>' : ""}</div>`).join("")}</div><p class="sub">They go into your hand.</p></div>`;
   SFX.card(); speak("New card" + (got.length > 1 ? "s" : "") + "! " + got.map(k => P.isGrow(k) ? C[k].name : H[k].name).join(" and "));
-  await new Promise(r => { const t = setTimeout(r, 1900); ov.querySelector(".drawpop").onclick = () => { clearTimeout(t); r(); }; });
+  await new Promise(r => { const t = setTimeout(r, 2280); ov.querySelector(".drawpop").onclick = () => { clearTimeout(t); r(); }; });
   ov.innerHTML = "";
 }
 async function playEvents() {

@@ -155,7 +155,7 @@
      and stays there. Moves need that many gems on the Púca out front; gems are not used
      up. Swapping sends 1 gem home. A free Emerald arrives whenever you have no gem
      card, so you never run dry. Little mode keeps the shared emeralds (1 a turn). */
-  var MON_GEMS = 5, NORMAL_HAND = 7;
+  var MON_GEMS = 5, NORMAL_HAND = 7, POUCH_MAX = 5;
   var MAX_GEMS = 5, HAND_MAX = 3, PACK_PRICE = 10, WIN_POINTS = 3;
 
   function stageFor(level) { return level >= 25 ? 3 : level >= 10 ? 2 : 1; }
@@ -274,19 +274,21 @@
   function hasGemCard(s) { return s.hand.some(isGem); }
   function mkSide(team, help, rng, extra, little) {
     return { mons: team.map(function (id) { return mkMon(id, little); }), front: 0, gems: 1, hand: [], legendUsed: false, shield: false, deck: shuffle(helpList(help).concat(extra || []), rng),
-             guard: 0, mist: 0, power: 0, freeSwap: false, helpUsed: false, swapped: false, grew: false };
+             guard: 0, mist: 0, power: 0, freeSwap: false, helpUsed: false, swapped: false, grew: false, token: null, pouch: [], bonusUsed: false };
   }
   function front(s) { return s.mons[s.front]; }
   function card(mon) { return CARDS[mon.id]; }
 
   function newMatch(o) {
     var rng = o.rng || Math.random;
-    var m = { mode: o.mode, rng: rng, turn: 0, round: 1, over: null, events: [],
+    var m = { mode: o.mode, auto: !!o.auto && o.mode === "normal", rng: rng, turn: 0, round: 1, over: null, events: [],
               sides: [mkSide(o.kidTeam, o.mode === "normal" ? o.kidHelp : null, rng, o.mode === "normal" ? o.kidGrow : null, o.mode === "little"),
                       mkSide(o.ruaTeam, o.mode === "normal" ? o.ruaHelp : null, rng, o.mode === "normal" ? o.ruaGrow : null, o.mode === "little")] };
     if (m.mode === "normal") {
-      m.sides.forEach(function (s) { s.handMax = NORMAL_HAND; s.gems = 0; draw(s, 3); });
-      var sec = m.sides[1].mons[0]; sec.gems = 1; sec.gemTypes.push("moss"); draw(m.sides[1], 1); // going second: a gem on its Púca and one extra card
+      m.sides.forEach(function (s) { s.handMax = NORMAL_HAND; s.gems = 0; s.auto = m.auto; draw(s, 3); });
+      var sec = m.sides[1].mons[0];
+      if (m.auto) { var sg = o.secondGems === undefined ? 1 : o.secondGems; for (var q = 0; q < sg; q++) { sec.gems++; sec.gemTypes.push(CARDS[sec.id].type); } draw(m.sides[1], o.secondCards === undefined ? 1 : o.secondCards); }
+      else { sec.gems = 1; sec.gemTypes.push("moss"); draw(m.sides[1], 1); } // going second: a gem on its Púca and one extra card
     }
     startTurn(m);
     return m;
@@ -303,6 +305,7 @@
     while (k < n && s.hand.length < max && s.deck.length && tries < 60) {
       var c = s.deck.pop(); tries++;
       if (!growOk(s, c)) { s.deck.unshift(c); continue; }
+      if (s.auto && isGem(c)) { if (s.pouch.length < POUCH_MAX) { s.pouch.push(c); s.gotPouch = (s.gotPouch || []).concat(c); } continue; }
       s.hand.push(c); s.got.push(c); k++;
     }
     return k;
@@ -311,14 +314,57 @@
     var s = m.sides[m.turn], freeGem = false;
     if (!tcg(m)) s.gems = Math.min(MAX_GEMS, s.gems + 1);
     s.guard = 0; s.helpUsed = false; s.swapped = false; s.freeSwap = false; s.grew = false; s.attached = false;
-    s.got = [];
+    s.got = []; s.gotPouch = []; s.bonusUsed = false;
     var drew = tcg(m) ? draw(s, 1) : 0;
+    /* Auto gems: one gem in your front Púca's colour arrives each turn as a token. */
+    if (m.auto) { s.token = GEM_OF[CARDS[front(s).id].type] || "emerald"; }
     /* Keep gems coming: if you hold fewer than 2 gem cards, a gem of your front Púca's colour arrives too. */
-    if (tcg(m) && s.hand.filter(isGem).length < 2) { freeGem = GEM_OF[CARDS[front(s).id].type] || "emerald"; s.hand.push(freeGem); s.got.push(freeGem); }
-    m.events.push({ t: "turn", side: m.turn, drew: drew, freeGem: freeGem, got: s.got.slice() });
+    else if (tcg(m) && s.hand.filter(isGem).length < 2) { freeGem = GEM_OF[CARDS[front(s).id].type] || "emerald"; s.hand.push(freeGem); s.got.push(freeGem); }
+    m.events.push({ t: "turn", side: m.turn, drew: drew, freeGem: freeGem, got: s.got.slice(), token: s.token, pouchGot: s.gotPouch.slice() });
+  }
+  /* Auto gems: a token you have not placed goes onto your front Púca (or the next one with room) when you attack, swap or end your turn. */
+  function autoPlace(m) {
+    var s = m.sides[m.turn];
+    if (!m.auto || !s.token) return null;
+    var to = s.front;
+    if (s.mons[to].gems >= MON_GEMS) { to = -1; s.mons.forEach(function (x, j) { if (to < 0 && !x.out && x.gems < MON_GEMS) to = j; }); }
+    if (to < 0) { s.token = null; return null; }
+    return placeToken(m, to, true);
+  }
+  function placeToken(m, to, auto) {
+    var s = m.sides[m.turn];
+    if (!m.auto || m.over || !s.token) return null;
+    if (to === undefined) to = s.front;
+    var mon = s.mons[to];
+    if (!mon || mon.out || mon.gems >= MON_GEMS) return null;
+    var g = s.token; s.token = null;
+    mon.gems += 1; mon.gemTypes.push(HELP[g].gem); s.attached = true;
+    var ev = { t: "attach", side: m.turn, card: g, at: to, who: mon.id, match: HELP[g].gem === CARDS[mon.id].type, gems: mon.gems, token: true, auto: !!auto };
+    m.events.push(ev);
+    return ev;
+  }
+  /* A gem card from the pouch takes the place of this turn's token: you pick the colour. Still one gem a turn. */
+  function usePouch(m, pi, to) {
+    var s = m.sides[m.turn];
+    if (!m.auto || m.over || !s.token || pi < 0 || pi >= s.pouch.length) return null;
+    var mon = s.mons[to === undefined ? s.front : to];
+    if (!mon || mon.out || mon.gems >= MON_GEMS) return null;
+    var k = s.pouch.splice(pi, 1)[0];
+    mon.gems += 1; mon.gemTypes.push(HELP[k].gem); s.token = null; s.attached = true;
+    var ev = { t: "attach", side: m.turn, card: k, at: s.mons.indexOf(mon), who: mon.id, match: HELP[k].gem === CARDS[mon.id].type, gems: mon.gems, bonus: true };
+    m.events.push(ev);
+    return ev;
+  }
+  function pouchBlock(m, pi) {
+    var s = m.sides[m.turn];
+    if (!m.auto || m.over) return "Not in this game.";
+    if (!s.token) return "You have already used your gem this turn. Try again next turn!";
+    if (!s.mons.some(function (x) { return !x.out && x.gems < MON_GEMS; })) return "Your Púcas are full of gems.";
+    return null;
   }
   function endTurn(m) {
     if (m.over) return;
+    autoPlace(m);
     m.turn = 1 - m.turn;
     if (m.turn === 0) m.round++;
     startTurn(m);
@@ -331,18 +377,21 @@
     if (strong) dmg += 10;
     if (o.shield) return { dmg: 0, strong: strong, mist: false, guard: false, power: false, shield: true };
     dmg += s.power || 0;
-    var fm = front(s), matched = tcg(m) && fm.gemTypes.indexOf(a.type) >= 0;
+    var fm = front(s), matched = tcg(m) && (fm.gemTypes.indexOf(a.type) >= 0 || (s.token === GEM_OF[a.type] && fm.gems < MON_GEMS && si === m.turn));
     if (matched) dmg += 10;
     var mist = s.mist, guard = o.guard;
     dmg = Math.max(Math.min(10, mvv.p), dmg - mist - guard); // a move always does at least 10
     return { dmg: dmg, strong: strong, mist: mist > 0, guard: guard > 0, power: (s.power || 0) > 0, gemPower: matched };
   }
+  /* Gems on the front Púca, counting a token that would go there on its own. */
+  function effGems(s) { var f = s.mons[s.front]; return f.gems + (s.token && f.gems < MON_GEMS ? 1 : 0); }
   function canMove(m, mi) {
     var s = m.sides[m.turn];
-    return !m.over && card(front(s)).moves[mi].c <= (tcg(m) ? front(s).gems : s.gems);
+    return !m.over && card(front(s)).moves[mi].c <= (tcg(m) ? effGems(s) : s.gems);
   }
   function useMove(m, mi) {
     if (!canMove(m, mi)) return null;
+    autoPlace(m);
     var si = m.turn, s = m.sides[si], o = m.sides[1 - si];
     var me = front(s), mvv = card(me).moves[mi], target = front(o);
     var r = dmgFor(m, si, mi);
@@ -395,11 +444,12 @@
   }
   function canSwap(m, to) {
     var s = m.sides[m.turn];
-    return m.mode === "normal" && !m.over && !s.swapped && to !== s.front && s.mons[to] && !s.mons[to].out && (s.freeSwap || front(s).gems >= 1);
+    return m.mode === "normal" && !m.over && !s.swapped && to !== s.front && s.mons[to] && !s.mons[to].out && (s.freeSwap || effGems(s) >= 1);
   }
   function swap(m, to) {
     if (!canSwap(m, to)) return null;
     var s = m.sides[m.turn], free = s.freeSwap;
+    if (!free) autoPlace(m);
     if (!free) { var fr = front(s); fr.gems -= 1; fr.gemTypes.pop(); }
     s.freeSwap = false; s.front = to; s.swapped = true; s.guard = 0;
     var ev = { t: "swap", side: m.turn, who: s.mons[to].id, free: free };
@@ -534,7 +584,20 @@
       return (beats(card(s.mons[b]).type, oc.type) ? 1 : 0) - (beats(card(s.mons[a]).type, oc.type) ? 1 : 0);
     });
     var wantSwap = beaten && better.length && !s.swapped && f.puff > 0;
-    if (tcg(m) && !s.attached) {
+    if (m.auto && s.token) {
+      var tg = s.front;
+      if (f.gems >= fc.moves[1].c || f.gems >= MON_GEMS) {
+        var need2 = bench.filter(function (j) { return s.mons[j].gems < card(s.mons[j]).moves[1].c; });
+        if (need2.length) tg = need2[0];
+      }
+      if (s.mons[tg].gems < MON_GEMS) {
+        var want = card(s.mons[tg]).type, pi2 = -1;
+        for (var pq = 0; pq < s.pouch.length; pq++) if (HELP[s.pouch[pq]].gem === want) { pi2 = pq; break; }
+        if (pi2 >= 0 && s.token !== GEM_OF[want]) return { a: "bonus", i: pi2, to: tg };
+        return { a: "token", to: tg };
+      }
+    }
+    if (tcg(m) && !s.attached && !m.auto) {
       var gi2 = -1; for (var q = 0; q < s.hand.length; q++) if (isGem(s.hand[q])) { gi2 = q; if (HELP[s.hand[q]].gem === fc.type) break; }
       if (gi2 >= 0) {
         var tgt = s.front;
@@ -582,7 +645,9 @@
   }
   function aiStep(m) {
     var act = aiNext(m), ev = null;
-    if (act.a === "help") ev = playHelp(m, act.i, act.to);
+    if (act.a === "token") ev = placeToken(m, act.to);
+    else if (act.a === "bonus") ev = usePouch(m, act.i, act.to);
+    else if (act.a === "help") ev = playHelp(m, act.i, act.to);
     else if (act.a === "swap") ev = swap(m, act.to);
     else if (act.a === "move") ev = useMove(m, act.mi);
     else ev = pass(m);
@@ -597,7 +662,7 @@
     stageFor: stageFor, myCard: myCard, others: others, starterDeck: starterDeck, packPath: packPath, packContents: packContents,
     packsToLegendary: packsToLegendary, packsToPuca: packsToPuca, packsAhead: packsAhead, waitingFor: waitingFor, madeIds: madeIds, FAMILIES: FAMILIES, TOTAL_PUCAS: TOTAL_PUCAS, PACK_SIZE: PACK_SIZE, helpList: helpList, shuffle: shuffle,
     ruaTeam: ruaTeam, ruaLittle: ruaLittle, newMatch: newMatch, front: front, card: card, dmgFor: dmgFor,
-    canMove: canMove, useMove: useMove, canSwap: canSwap, pickNext: pickNext, swap: swap, helpBlock: helpBlock, playHelp: playHelp,
+    canMove: canMove, placeToken: placeToken, usePouch: usePouch, pouchBlock: pouchBlock, effGems: effGems, POUCH_MAX: POUCH_MAX, useMove: useMove, canSwap: canSwap, pickNext: pickNext, swap: swap, helpBlock: helpBlock, playHelp: playHelp,
     pass: pass, benchAlive: benchAlive, aiNext: aiNext, aiStep: aiStep };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else root.PUCAS = API;
 })(this);

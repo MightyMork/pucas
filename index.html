@@ -14,6 +14,8 @@
 :root{--navy:#121B33;--night:#1c1a2e;--ink:#f3e6cc;--cream:#fff4d6;--soft:#b9afd0;--gold:#E3B23C;--line:#4a4370;--emer:#2fbf71}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0}
+html{overflow-x:hidden} /* v29: the page never scrolls sideways */
+.hfan{max-width:100%;overflow-x:clip}
 body{background:var(--night);color:var(--ink);font-family:'Andika',sans-serif;font-size:18px;line-height:1.35;overflow-x:hidden;scrollbar-width:none}
 body::-webkit-scrollbar{display:none}
 body:before{content:"";position:fixed;inset:0;z-index:-1;background:
@@ -1071,7 +1073,25 @@ function renderMatch() {
     <p class="sub" style="font-size:13px;text-align:center;margin:6px 0 0">Drag a card to where it goes. Gold lights show you where. 💪 means strong against Rua's Púca, 😟 means careful.</p>`;
   } else h += `<div style="text-align:center;margin-top:8px"><button class="btn alt small" style="width:auto;margin:0 auto" data-act="pass" ${myTurn ? "" : "disabled"}>${PX.save} Wait a turn</button></div>`;
   app.innerHTML = h;
+  fitFan();
 }
+/* v29: squeeze the hand so every card fits inside the screen (up to 7 cards plus the waiting Púcas).
+   The fan's tilt swings the outer cards out past the sides, which pushed the whole page off centre on a phone.
+   Measure the tilted cards and tighten the overlap, then the tilt, until they fit. */
+function fitFan() {
+  const fan = document.querySelector(".hfan"); if (!fan) return;
+  const bs = [...fan.querySelectorAll(":scope>button")], n = bs.length; if (n < 2) return;
+  const box = fan.getBoundingClientRect(), L = box.left + 2, R = box.right - 2, cw = bs[0].offsetWidth, mid = (n - 1) / 2;
+  let step = n > 3 ? 7 : 9, lift = n > 3 ? 6 : 9, ov = parseFloat(bs[0].style.marginLeft) || 0;
+  const apply = () => bs.forEach((b, j) => { b.style.transform = `rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * lift}px)`; b.style.marginLeft = b.style.marginRight = ov + "px"; });
+  for (let t = 0; t < 20; t++) {
+    let lo = Infinity, hi = -Infinity; bs.forEach(b => { const r = b.getBoundingClientRect(); lo = Math.min(lo, r.left); hi = Math.max(hi, r.right); });
+    if (lo >= L && hi <= R) return;
+    if (ov > -cw * 0.38) ov = Math.max(-cw * 0.38, ov - 4); else if (step > 2) { step--; lift = Math.max(3, lift - 1); } else return;
+    apply();
+  }
+}
+addEventListener("resize", fitFan);
 function whereText(j) {
   const s = M.sides[VIEW], k = s.hand[j];
   if (P.isGrow(k)) { const t = P.growTargets(M, j, VIEW); return t.length ? `Put it on ${C[s.mons[t[0]].id].name} to grow it.` : `It grows from ${C[P.prevOf(k)].name}.`; }

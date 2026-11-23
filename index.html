@@ -756,11 +756,12 @@ const PIX = (() => {
 })();
 function homePics() {
   const o = opts().icons, b = board(), id = myId(), baby = K().puca;
-  const friend = `<span style="display:flex;gap:2px">${KIDS.map(k => avatarHTML(k, false, 30)).join("")}</span>`;
+  const two = [kid, ...KIDS.filter(k => k !== kid)].filter(Boolean).slice(0, 2); // at most 2 avatars, so the button text stays clear
+  const friend = `<span style="display:flex;gap:2px">${two.map(k => avatarHTML(k, false, 30)).join("")}</span>`;
   if (o === 2) return { cards: PIX.cards, pack: PIX.pack, quick: PIX.quick, little: PIX.little, big: PIX.big, friend: PX.friend, help: PX.help };
   const fan = `<span class="fan3">${b.slice(0, 3).map(x => tcard(x)).join("")}</span>`;
   const pk = `<span class="pack mini">${packArt(true)}</span>`;
-  if (o === 3) return { cards: fan, pack: pk, quick: `<img src="${img(id, "attack")}" alt="">`, little: `<img src="${img(baby, "happy")}" alt="">`, friend: `<span style="display:flex;gap:4px">${KIDS.map(k => avatarHTML(k, false, 60)).join("")}</span>`, help: `<img src="${img(id, "happy")}" alt=""><span style="position:absolute;top:8px;right:12px;width:40px">${PX.help}</span>`, big: `<span style="display:flex"><img src="${img(b[0])}" alt="" style="height:70px"><img src="${img(b[1] || b[0])}" alt="" style="height:70px"><img src="${img(b[2] || b[0])}" alt="" style="height:70px"></span>` };
+  if (o === 3) return { cards: fan, pack: pk, quick: `<img src="${img(id, "attack")}" alt="">`, little: `<img src="${img(baby, "happy")}" alt="">`, friend: `<span style="display:flex;gap:4px">${two.map(k => avatarHTML(k, false, 60)).join("")}</span>`, help: `<img src="${img(id, "happy")}" alt=""><span style="position:absolute;top:8px;right:12px;width:40px">${PX.help}</span>`, big: `<span style="display:flex"><img src="${img(b[0])}" alt="" style="height:70px"><img src="${img(b[1] || b[0])}" alt="" style="height:70px"><img src="${img(b[2] || b[0])}" alt="" style="height:70px"></span>` };
   return { cards: fan, pack: pk, quick: `<img src="${img(id)}" alt="" style="height:52px">`, little: `<img src="${img(baby, "happy")}" alt="" style="height:52px">`, big: `<img src="${img(b[0])}" alt="" style="height:52px">`, friend, help: PX.help };
 }
 let CF = { type: "all", rar: 0, stage: 0, sort: "no", open: false };

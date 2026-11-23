@@ -523,7 +523,7 @@ h1{font-size:30px}h2{font-size:22px}
 .hfan>button.can:not(:hover){animation:canp 1.6s ease-in-out infinite}
 @keyframes canp{50%{filter:drop-shadow(0 0 1px #ffd54a80) drop-shadow(0 0 4px #ffd54a80)}}
 @media (prefers-reduced-motion:reduce){.hfan>button.can{animation:none!important}}
-.cico{position:absolute;top:-6px;right:-4px;width:24px;height:24px;border-radius:50%;background:#1c1a2e;border:2px solid var(--gold);color:var(--gold);font:700 14px/20px 'Andika',sans-serif;text-align:center;z-index:3}
+.cico{position:absolute;top:-6px;left:-4px;width:24px;height:24px;border-radius:50%;background:#1c1a2e;border:2px solid var(--gold);color:var(--gold);font:700 14px/20px 'Andika',sans-serif;text-align:center;z-index:3}
 /* layouts */
 .mat.lA{height:432px}
 .mat.lA .spr.k{left:4%;top:156px;bottom:auto}
@@ -1996,6 +1996,39 @@ async function doInstall() {
   installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {}
   installEvt = null; fromSheet ? grownSheet() : render();
 }
+/* ---------- Android Back button: handled inside the game ----------
+   While there is somewhere to go back to, one extra "guard" history entry is kept. A Back press
+   uses it up; the game then steps back one place (closes a pop-up or held card, asks "Stop this
+   match?", goes back to home, then to Who's playing) and puts the guard back. On the first screen
+   there is no guard, so Back leaves Púcas Cards in one press. */
+let backGuarded = false, backIgnore = 0;
+function backRoot() {
+  if ($("#ovl") && $("#ovl").innerHTML.trim()) return false;
+  if (!isInstalled() && !PLAY_HERE && !(R === "match" || R === "result")) return true; // "get the app" screen
+  return !kid || R === "who" || R === "nopuca";
+}
+function backSync() {
+  const need = !backRoot();
+  if (need && !backGuarded) { history.pushState({ pcGuard: 1 }, ""); backGuarded = true; }
+  else if (!need && backGuarded) { backGuarded = false; backIgnore++; history.back(); }
+}
+function backStep() {
+  const ov = $("#ovl"), busyOv = ov && ov.innerHTML.trim() && !$(".ov") && !$(".hold");
+  if ($(".hold") || $(".ov")) { closeSheet(); if (R !== "match") render(); return; }
+  if (R === "match") { if (busy || busyOv) return; const q = $('[data-act="quit"]'); if (q) q.click(); return; } // hand-overs and animations: Back waits
+  if (busyOv) return;
+  if (R === "result") { R = "home"; M = null; VIEW = 0; render(); return; }
+  if (R !== "home") { R = "home"; render(); return; }
+  if (S.device === "family") kid = null;
+  R = "who"; render();
+}
+addEventListener("popstate", () => {
+  if (backIgnore) { backIgnore--; return; }
+  backGuarded = false; backStep(); setTimeout(backSync, 0);
+});
+{ const r0 = render; render = function () { r0(); backSync(); }; }
+{ const s0 = sheet; sheet = function (...a) { s0(...a); backSync(); }; }
+{ const c0 = closeSheet; closeSheet = function () { c0(); setTimeout(backSync, 0); }; }
 LINK.on(kind => {
   if (kind === "state") { updateBar(); return; }
   project();

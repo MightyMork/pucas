@@ -281,14 +281,15 @@
 
   function newMatch(o) {
     var rng = o.rng || Math.random;
-    var m = { mode: o.mode, auto: !!o.auto && o.mode === "normal", rng: rng, turn: 0, round: 1, over: null, events: [],
+    var first = o.first === 1 ? 1 : 0;
+    var m = { mode: o.mode, auto: !!o.auto && o.mode === "normal", rng: rng, first: first, turn: first, round: 1, over: null, events: [],
               sides: [mkSide(o.kidTeam, o.mode === "normal" ? o.kidHelp : null, rng, o.mode === "normal" ? o.kidGrow : null, o.mode === "little"),
                       mkSide(o.ruaTeam, o.mode === "normal" ? o.ruaHelp : null, rng, o.mode === "normal" ? o.ruaGrow : null, o.mode === "little")] };
     if (m.mode === "normal") {
       m.sides.forEach(function (s) { s.handMax = NORMAL_HAND; s.gems = 0; s.auto = m.auto; draw(s, 3); });
-      var sec = m.sides[1].mons[0];
-      if (m.auto) { var sg = o.secondGems === undefined ? 1 : o.secondGems; for (var q = 0; q < sg; q++) { sec.gems++; sec.gemTypes.push(CARDS[sec.id].type); } draw(m.sides[1], o.secondCards === undefined ? 1 : o.secondCards); }
-      else { sec.gems = 1; sec.gemTypes.push("moss"); draw(m.sides[1], 1); } // going second: a gem on its Púca and one extra card
+      var secSide = m.sides[1 - first], sec = secSide.mons[0];
+      if (m.auto) { var sg = o.secondGems === undefined ? 1 : o.secondGems; for (var q = 0; q < sg; q++) { sec.gems++; sec.gemTypes.push(CARDS[sec.id].type); } draw(secSide, o.secondCards === undefined ? 1 : o.secondCards); }
+      else { sec.gems = 1; sec.gemTypes.push("moss"); draw(secSide, 1); } // going second: a gem on its Púca and one extra card
     }
     startTurn(m);
     return m;
@@ -366,7 +367,7 @@
     if (m.over) return;
     autoPlace(m);
     m.turn = 1 - m.turn;
-    if (m.turn === 0) m.round++;
+    if (m.turn === m.first) m.round++;
     startTurn(m);
   }
 

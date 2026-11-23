@@ -188,6 +188,25 @@ h1{font-size:30px}h2{font-size:22px}
 .hcard.only{transform:none}
 .hcard.dim{filter:brightness(.6)}
 .actions{display:flex;gap:8px;margin-top:8px}
+.gemrow{display:flex;align-items:center;gap:10px;padding:2px 12px 0;min-height:48px}
+.gtok{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px 0 4px;border-radius:14px;background:#1c1a2e;border:2px solid #4a4470;color:#f5f1ff;font-family:'Andika',sans-serif;touch-action:none;text-align:left}
+.gtok b{display:block;font-size:16px;line-height:1.1}.gtok small{display:block;font-size:13px;color:#b9afd0}
+.gtok.can{border-color:var(--gold);filter:drop-shadow(0 0 2px #ffd54ab3) drop-shadow(0 0 6px #ffd54ab3)}
+.gtok.used{color:#b9afd0;font-size:15px;padding:0 12px}
+.gw{position:relative;display:block;flex:0 0 auto}
+.gty{position:absolute;right:-7px;bottom:-5px;width:20px;height:20px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:#fff;box-shadow:0 1px 3px #000a}
+.gty svg{width:12px;height:12px}
+.gw.big .gty{width:22px;height:22px;right:-8px}
+.gimg{display:block;width:30px;height:30px;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 2px 2px #0008)}
+.gimg.big{width:38px;height:38px}
+.pouch{display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;min-height:44px;padding-left:2px}
+.pouch::-webkit-scrollbar{display:none}
+.pouch .pl{font-size:14px;color:var(--soft);margin-right:2px}.pouch .pe{font-size:14px;color:#8d85a8}
+.pg{flex:0 0 auto;min-width:44px;min-height:44px;border-radius:12px;background:#1c1a2e;border:2px solid #4a4470;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none}
+.pg.can{border-color:var(--gold)}
+.ghost.gg{width:70px;height:70px;display:flex;align-items:center;justify-content:center;background:none;filter:drop-shadow(0 8px 10px #000b)}
+.ghost.gg .gimg,.ghost.gg .gimg.big{width:60px;height:60px}
+@media (prefers-reduced-motion:reduce){.gtok.can{filter:none}}
 .ghost{position:fixed;z-index:90;pointer-events:none;transform:rotate(-4deg) scale(1.08);filter:drop-shadow(0 10px 12px #000c)}
 
 /* setup */
@@ -1074,7 +1093,7 @@ function startMatch(mode) {
   const kidGrow = own.filter(x => !kt.includes(x) && kt.some(b => C[b].line === C[x].line && C[b].stage < C[x].stage));
   const ruaGrow = rt.filter(x => C[x].stage < 3).slice(0, kidGrow.length).map(x => P.LINES[C[x].line][C[x].stage]);
   const ruaHelp = Object.assign({}, P.starterDeck(P.ALL_LINES[Math.floor(rng() * 3)]).help, Object.keys(d.help).some(x => H[x] && H[x].legend && d.help[x]) ? { setanta: 1 } : {});
-  M = P.newMatch({ mode: mode === "little" ? "little" : "normal", kidTeam: kt, ruaTeam: rt, kidHelp: d.help, ruaHelp, kidGrow, ruaGrow, rng });
+  M = P.newMatch({ mode: mode === "little" ? "little" : "normal", kidTeam: kt, ruaTeam: rt, kidHelp: d.help, ruaHelp, kidGrow, ruaGrow, rng, auto: true });
   M.sides[0].manual = true; M.kind = mode; evIdx = M.events.length; busy = false; R = "match"; VIEW = 0; matchCfg.mine = [myId(), null];
   const rf = C[rt[0]];
   M.msg = mode === "little" ? `Rua brought ${rf.name}! Tap a move.` : `Rua's ${rf.name} is out front.`;
@@ -1154,7 +1173,7 @@ function typeWheel(hi) {
 const INTRO = {
   normal: [
     ["Your team", () => `<div class="row" style="justify-content:center">${board().map((x, i) => `<span style="zoom:${i ? .3 : .38}">${tcard(x)}</span>`).join("")}</div>`, "Your Púca leads your team. Two friends wait behind, ready to swap in."],
-    ["Gems", () => `<div class="row" style="justify-content:center;align-items:flex-end;gap:16px"><span style="position:relative;display:inline-block"><span style="zoom:.38">${tcard(board()[0])}</span><div class="pips" style="position:absolute"><i style="background:#2fbf71"></i><i style="background:#3a7bdc"></i></div></span><span style="zoom:.3">${hcard("emerald")}</span></div>`, "Each turn, put one gem card on any of your Púcas. The gems stay on that Púca. A move needs that many gems on your Púca out front. A matching gem gives +10! No gem card? You get a free Emerald."],
+    ["Gems", () => `<div class="row" style="justify-content:center;align-items:flex-end;gap:16px"><span style="position:relative;display:inline-block"><span style="zoom:.38">${tcard(board()[0])}</span><div class="pips" style="position:absolute"><i style="background:#2fbf71"></i><i style="background:#3a7bdc"></i></div></span><span style="zoom:.3">${hcard("emerald")}</span></div>`, "Each turn you get one gem. Put it on any of your Púcas, or just attack and it goes on your Púca out front. The gems stay on that Púca. A move needs that many gems on your Púca out front. A matching gem gives +10! Gem cards wait in your pouch: use one instead of this turn's gem to pick the colour."],
     ["Strong and careful", () => typeWheel(), "Some Púcas are strong against others. Strong moves do 10 more. Look for 💪 and 😟 on the cards."],
     ["Cards in your hand", () => `<div class="row" style="justify-content:center"><span style="zoom:.35">${hcard("oatcake")}</span><span style="zoom:.35">${hcard("sapphire")}</span><span style="zoom:.35">${hcard("setanta")}</span></div>`, "Drag a card to where the gold light shows. One gem and one Help card a turn. Legends are once a match. Put a grown-up card on its baby to grow it!"],
     ["Win!", () => `<div class="row" style="justify-content:center"><img src="${img(myId(), "happy")}" style="height:120px" alt=""><img src="${img("mossnub", "asleep")}" style="height:90px" alt=""></div>`, "Puff out all of the other Púcas to win. Nobody gets hurt: they just go home for a rest."]
@@ -1189,7 +1208,7 @@ function matchHelp() {
   <div style="font-size:40px">${v === "strong" ? "💪" : v === "weak" ? "😟" : "🤝"}</div>
   <div style="text-align:center"><img src="${img(rf.id)}" style="height:90px;transform:scaleX(-1)" alt=""><div><span class="tbadge" style="background:${T[b.type].col}">${TICON[b.type]}</span> ${b.name}</div></div></div>
   <p style="font-size:19px;text-align:center">${say}</p><div class="row" style="justify-content:center">${sayBtn(say)}</div>
-  <h2 style="font-size:18px">What can I do?</h2><p style="margin:0">${M.mode === "normal" ? `${a.name} has ${kf.gems} gem${kf.gems === 1 ? "" : "s"} on it.${ks.attached ? " You've put on your gem this turn." : " You can put 1 gem on a Púca this turn."}` : `You have ${ks.gems} emerald${ks.gems === 1 ? "" : "s"}.`}</p><ul class="canlist">${can.map(x => `<li>${x}</li>`).join("")}</ul>
+  <h2 style="font-size:18px">What can I do?</h2><p style="margin:0">${M.mode === "normal" ? `${a.name} has ${kf.gems} gem${kf.gems === 1 ? "" : "s"} on it.${ks.attached ? " You've put on your gem this turn." : M.auto ? " Your gem is ready: drag it onto any Púca, or just attack and it goes on your Púca out front." : " You can put 1 gem on a Púca this turn."}` : `You have ${ks.gems} emerald${ks.gems === 1 ? "" : "s"}.`}</p><ul class="canlist">${can.map(x => `<li>${x}</li>`).join("")}</ul>
   <h2 style="font-size:18px">Who is strong against who</h2>${typeWheel(v === "strong" ? [a.type, b.type] : v === "weak" ? [b.type, a.type] : null)}
   <div class="row" style="margin-top:10px"><button class="btn alt small" data-act="howto">How to play</button><button class="btn small" data-act="close">Back to the game</button></div>`);
   speak(say);
@@ -1329,6 +1348,7 @@ function renderMatch() {
     if (myTurn) for (let i = ks.hand.length - 1; i >= 0 && fresh.length; i--) { const f = fresh.lastIndexOf(ks.hand[i]); if (f >= 0) { isNew[i] = true; fresh.splice(f, 1); } }
     const items = ks.hand.map((k, i) => ({ hand: true, k, i }));
     const n = items.length, mid = (n - 1) / 2, ov = n > 3 ? -28 : -14, step = n > 3 ? 7 : 9;
+    if (M.auto) h += gemRow(ks, myTurn);
     h += `<div class="hfan"><span class="lbl">Your hand · ${ks.deck.length} in your deck${ks.helpUsed ? " · Help card played" : ""}${ks.grew ? " · grew a Púca" : ""}</span>` + (n ? items.map((it, j) => {
       const st = `transform:rotate(${(j - mid) * step}deg) translateY(${Math.abs(j - mid) * (n > 3 ? 6 : 9)}px);margin:0 ${ov}px`;
       if (it.hand) {
@@ -1341,9 +1361,37 @@ function renderMatch() {
     }).join("") : '<span class="sub">No cards in your hand</span>') + `</div>`;
     const stuck = myTurn && ![0, 1].some(i => P.canMove(M, i)) && !ks.hand.some((_, i) => !P.helpBlock(M, i));
     h += `<div class="actions"><button class="btn ${stuck ? "glowbtn" : "alt"} small" data-act="pass" ${myTurn ? "" : "disabled"}>${PX.save} ${stuck ? "Save up: end your turn" : "End turn (save gems)"}</button></div>
-    <p class="sub" style="font-size:13px;text-align:center;margin:6px 0 0">Drag a card to where it goes. Gold lights show you where. 💪 means strong against Rua's Púca, 😟 means careful.</p>`;
+    ${M.auto ? "" : `<p class="sub" style="font-size:13px;text-align:center;margin:6px 0 0">Drag a card to where it goes. Gold lights show you where. 💪 means strong against Rua's Púca, 😟 means careful.</p>`}`;
   } else h += `<div style="text-align:center;margin-top:8px"><button class="btn alt small" style="width:auto;margin:0 auto" data-act="pass" ${myTurn ? "" : "disabled"}>${PX.save} Wait a turn</button></div>`;
   app.innerHTML = h;
+}
+/* Auto gems: this turn's gem token, and the pouch of gem cards. */
+function gemDot(key, big) { const ty = H[key].gem; return `<span class="gw${big ? " big" : ""}"><img class="gimg${big ? " big" : ""}" src="img/${H[key].img}" alt=""><span class="gty" style="background:${T[ty].col}" aria-label="${T[ty].name} type">${TICON[ty]}</span></span>`; }
+function gemRow(ks, myTurn) {
+  const hasTok = !!ks.token, blk = myTurn ? P.pouchBlock(M, 0) : "wait";
+  const tok = hasTok
+    ? `<button class="gtok${myTurn ? " can" : ""}" data-act="holdgem" data-p="t" ${myTurn ? 'data-drag="gem"' : ""} aria-label="Your gem for this turn: ${H[ks.token].name}. Tap to choose a Púca.">${gemDot(ks.token, true)}<span><b>Your gem</b><small>${H[ks.token].name}</small></span></button>`
+    : `<div class="gtok used" aria-label="Gem placed for this turn">${M.turn === VIEW ? "✓ Gem placed" : "Rua is thinking…"}</div>`;
+  const pouch = `<div class="pouch" aria-label="Gem pouch: ${ks.pouch.length} gem card${ks.pouch.length === 1 ? "" : "s"}"><span class="pl">Pouch</span>${ks.pouch.length ? ks.pouch.map((k, i) => `<button class="pg${hasTok && myTurn && !blk ? " can" : ""}" data-act="holdgem" data-p="${i}" ${hasTok && myTurn && !blk ? 'data-drag="gem"' : ""} aria-label="${H[k].name} from your pouch">${gemDot(k)}</button>`).join("") : '<span class="pe">empty</span>'}</div>`;
+  return `<div class="gemrow">${tok}${pouch}</div>`;
+}
+function holdGem(start) {
+  const ks = M.sides[VIEW], myTurn = humanTurn(), items = [];
+  const tg = P.gemTargets(M, VIEW);
+  function acts(p, key) {
+    const a = [];
+    if (myTurn) tg.forEach(t => a.push({ act: "placegem", data: `data-p="${p}" data-to="${t}"`, label: `💎 Put on ${C[ks.mons[t].id].name}${t === ks.front ? " (out front)" : ""} · has ${ks.mons[t].gems}${H[key].gem === C[ks.mons[t].id].type ? " · matches: +10!" : ""}` }));
+    return a;
+  }
+  if (ks.token) { const it = { k: "help", id: ks.token, acts: acts("t", ks.token) }; it.acts.push({ act: "close", label: "Don't choose: it goes on your Púca out front when you attack or end your turn.", alt: true, off: true }); items.push(it); }
+  ks.pouch.forEach((k, i) => {
+    const why = myTurn ? (ks.token ? P.pouchBlock(M, i) : "Your gem is used for this turn.") : "Wait for your turn";
+    const it = { k: "help", id: k, acts: why ? [{ act: "close", label: "Not now", off: true }] : acts(i, k) };
+    it.acts.push({ act: "close", label: why || "Takes the place of this turn's gem, so you pick the colour.", alt: true, off: true });
+    items.push(it);
+  });
+  if (!items.length) return;
+  holdUp(items, start, ks.token ? "Your gem" : "Your pouch");
 }
 function whereText(j) {
   const s = M.sides[VIEW], k = s.hand[j];
@@ -1459,8 +1507,8 @@ async function showEvent(e) {
     const gcol = GEMCOL[H[e.card].gem] || "#fff", isFront = e.at === M.sides[e.side].front;
     if (isFront) { const on = [...document.querySelectorAll(`#sk${e.side} .sk.on`)]; dropGem(on[on.length - 1], gcol); }
     else { const w = document.querySelector(`.wcard[data-side="${e.side}"][data-i="${e.at}"]`), host = $("#mat"); if (w) { anim(w, [{ scale: "1" }, { scale: "1.35" }, { scale: "1" }], { duration: 560 }); if (host) setTimeout(() => { const p = spot(w, host); burst(host, p.x, p.y, gcol, 10, 46); ringAt(host, p.x, p.y, gcol); }, REDUCE() ? 0 : 250); } }
-    setMsg(`${who(e.side)} put ${H[e.card].name} on ${C[e.who].name}!${e.match ? " 💎 +10!" : ""}`, e.side === VIEW);
-    await wait(e.side === VIEW ? 1200 : 1000);
+    setMsg(e.token ? `${e.side === VIEW ? "Your" : ownerName(e.side) + "'s"} gem went on ${C[e.who].name}!${e.match ? " 💎 +10!" : ""}` : `${who(e.side)} put ${H[e.card].name} on ${C[e.who].name}!${e.match ? " 💎 +10!" : ""}`, e.side === VIEW);
+    await wait(e.auto ? 600 : e.side === VIEW ? 1200 : 1000);
   } else if (e.t === "grow") {
     if (e.side !== VIEW) { holdUp([{ k: "puca", id: e.to }], 0, ownerName(e.side) + " plays…"); await wait(1500); closeSheet(); }
     renderMatch(); SFX.win(); confettiSmall();
@@ -1470,7 +1518,7 @@ async function showEvent(e) {
     if (matchCfg.hvh && e.side !== VIEW) await handover(e.side);
     renderMatch();
     if (e.side === VIEW && !little && e.got && e.got.length) await drawPop(e.got);
-    if (e.side === VIEW) { const names = (e.got || []).map(k => P.isGrow(k) ? C[k].name : H[k].name); setMsg(little ? "Your turn! Tap a move." : "Your turn! Pick a move or a card.", true); banner("YOUR TURN!"); if (little) gemPop(); }
+    if (e.side === VIEW) { const names = (e.got || []).map(k => P.isGrow(k) ? C[k].name : H[k].name); const pg = (e.pouchGot || []).length; setMsg(little ? "Your turn! Tap a move." : M.auto ? (pg ? "Your turn! A gem card went in your pouch. Pick a move or a card." : "Your turn! Your gem is ready. Pick a move or a card.") : "Your turn! Pick a move or a card.", true); banner("YOUR TURN!"); if (little) gemPop(); }
     else { setMsg(ownerName(e.side) + "'s turn…", false); banner(ownerName(e.side).toUpperCase() + "'S TURN", "r"); }
     await wait(e.side === VIEW ? 300 : 1700);
   }
@@ -1558,6 +1606,7 @@ function toastKid(t) { toast("", t); speak(t); }
 let drag = null;
 function hintsFor(kind, i) {
   if (kind === "bench") return [{ sel: "#kA", tip: "Swap in" }];
+  if (kind === "gem") { const s = M.sides[VIEW], gk = i < 0 ? s.token : s.pouch[i]; return P.gemTargets(M, VIEW).map(j => ({ sel: `[data-mon="${j}"]`, tip: H[gk].gem === C[s.mons[j].id].type ? "💎 +1 and +10!" : "💎 +1 gem" })); }
   const s = M.sides[VIEW], k = s.hand[i];
   if (P.isGrow(k)) return P.growTargets(M, i, VIEW).map(j => ({ sel: `[data-mon="${j}"]`, tip: "Grow!" }));
   if (P.isGem(k) && M.mode === "normal") return P.gemTargets(M, VIEW).map(j => ({ sel: `[data-mon="${j}"]`, tip: H[k].gem === C[s.mons[j].id].type ? "💎 +1 and +10!" : "💎 +1 gem" }));
@@ -1572,7 +1621,7 @@ function clearHints() { document.querySelectorAll(".target").forEach(el => el.cl
 document.addEventListener("pointerdown", e => {
   const el = e.target.closest("[data-drag]");
   if (!el || R !== "match" || busy || !M || M.turn !== VIEW || $(".hold")) return;
-  drag = { el, kind: el.dataset.drag, i: +(el.dataset.drag === "bench" ? (el.dataset.mon || el.dataset.i) : el.dataset.i), x: e.clientX, y: e.clientY, moved: false, ghost: null };
+  drag = { el, kind: el.dataset.drag, i: el.dataset.drag === "gem" ? (el.dataset.p === "t" ? -1 : +el.dataset.p) : +(el.dataset.drag === "bench" ? (el.dataset.mon || el.dataset.i) : el.dataset.i), x: e.clientX, y: e.clientY, moved: false, ghost: null };
 });
 document.addEventListener("pointermove", e => {
   if (!drag) return;
@@ -1580,6 +1629,7 @@ document.addEventListener("pointermove", e => {
     drag.moved = true;
     let r = drag.el.getBoundingClientRect(); const g = drag.el.cloneNode(true);
     g.className = "ghost"; g.removeAttribute("style");
+    if (drag.kind === "gem") { const gs = M.sides[VIEW], gk = drag.i < 0 ? gs.token : gs.pouch[drag.i]; g.className = "ghost gg"; g.innerHTML = gemDot(gk, true); r = { width: 70, height: 70 }; }
     if (drag.el.classList.contains("wcard")) { g.innerHTML = tcard(M.sides[VIEW].mons[drag.i].id); r = { width: 126, height: 176 }; }
     g.style.width = r.width + "px";
     g.querySelectorAll(".tcw").forEach(t => t.style.zoom = (r.width / 252).toFixed(3));
@@ -1601,6 +1651,11 @@ document.addEventListener("pointerup", e => {
     if (!over.closest('[data-drop="active"]')) return;
     if (!P.canSwap(M, d.i)) { setMsg(M.sides[VIEW].swapped ? "You can't swap again this turn." : "Swapping needs 1 gem on your Púca out front.", true); return; }
     return kidAct(() => P.swap(M, d.i));
+  }
+  if (d.kind === "gem") {
+    const on = over.closest("[data-mon]"), to = on ? +on.dataset.mon : over.closest("#mat") ? M.sides[VIEW].front : undefined;
+    if (to === undefined) return;
+    return kidAct(() => d.i < 0 ? P.placeToken(M, to) : P.usePouch(M, d.i, to));
   }
   const k = M.sides[VIEW].hand[d.i];
   if (P.isGem(k) && M.mode === "normal") {
@@ -1878,6 +1933,8 @@ document.addEventListener("click", e => {
     case "holdhand": if (inMatch) { const hi = +el.dataset.i, why = humanTurn() ? P.helpBlock(M, hi) : null; if (why) { setMsg(why, true); el.animate && el.animate([{ transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], { duration: 220 }); } else holdHand(hi); } break;
     case "pickmon": if (M && M.pick === VIEW && !busy) { const ev = P.pickNext(M, +el.dataset.i); if (ev) playEvents(); } break;
     case "holdboard": if (inMatch) holdBoard(+el.dataset.side, +el.dataset.i); break;
+    case "holdgem": if (inMatch && M.auto) { const ks = M.sides[VIEW]; holdGem(el.dataset.p === "t" ? 0 : (ks.token ? 1 : 0) + (+el.dataset.p)); } break;
+    case "placegem": kidAct(() => el.dataset.p === "t" ? P.placeToken(M, +el.dataset.to) : P.usePouch(M, +el.dataset.p, +el.dataset.to)); break;
     case "playhelp": kidAct(() => { const blk = P.helpBlock(M, +el.dataset.i); if (blk) { setMsg(blk, true); return false; } return P.playHelp(M, +el.dataset.i, el.dataset.to === undefined ? undefined : +el.dataset.to); }); break;
     case "move": { const mi = +el.dataset.i; if (M && humanTurn() && !busy && !P.canMove(M, mi)) { needNudge(mi); break; } kidAct(() => P.useMove(M, mi)); break; }
     case "swap": kidAct(() => P.swap(M, +el.dataset.i)); break;

@@ -645,6 +645,9 @@ h1{font-size:30px}h2{font-size:22px}
 @media (prefers-reduced-motion:reduce){.zzz{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* ---- step 5: the guided tour (pointing hand, everything else dimmed) ---- */
+.pxb svg{max-width:100%}
+.sndrow{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 4px;font:700 20px 'Andika',sans-serif;color:var(--cream)}
+.sndrow .sl{flex:1}.sndrow .ss{font-weight:400;font-size:15px;opacity:.8;display:block}
 #tut{position:fixed;inset:0;z-index:200;pointer-events:none;font-family:'Andika',sans-serif}
 #tut.hid .tdim,#tut.hid .tshields,#tut.hid .trings,#tut.hid .thand,#tut.hid .tcap{display:none}
 #tut .tdim{position:fixed;inset:0;background:rgba(8,6,20,.86);pointer-events:auto;touch-action:none}
@@ -740,7 +743,7 @@ function project() {
     kidsNow[k] = { puca: p.starter, xp: Number(p.xp) || 0, gems: LINK.gems(k), unlocked: LINK.jobToday(k) || !!LINK.playDoc(k).unlocked,
       minsLeft: Math.ceil(LINK.secsLeft(k) / 60), extra: Number(LINK.playDoc(k).extraMins) || 0, gUnlock: !!LINK.playDoc(k).unlocked, lateUntil: Number(LINK.playDoc(k).lateUntil) || 0, lateMins: Number(LINK.playDoc(k).lateMins) || 0, speech: LINK.kidPref("speech", k), sound: LINK.kidPref("sound", k), mode,
       read: { setanta: !!(stories.setanta || stories[k + "-setanta"] || Object.keys(stories).some(x => /setanta/.test(x))) } };
-    seenXp[k] = kidsNow[k].xp; lastMode[k] = mode;
+    seenXp[k] = kidsNow[k].xp; lastMode[k] = mode; sndApply(k, kidsNow[k]);
     if (cd.deck) { const j = JSON.stringify(cd.deck); if (!S.cards[k] || j !== lastDeck[k]) { S.cards[k] = JSON.parse(j); lastDeck[k] = j; } }
     if (S.cards[k]) {
       // their Púca changed in Púcas Cara (Change my Púca): its old line goes back into the collection
@@ -753,6 +756,21 @@ function project() {
     else if (pk.answer && !pk.answer.ok && !pk.answer.seen) S.requests.push({ id: "pack-" + k, kid: k, what: "pack", status: "no", seen: false });
   });
   S.kids = kidsNow;
+}
+/* Step 7: the ♪ switches, kept on this device per kid. Music and Narrator are the game's own
+   (defaults: music on, narrator off). Sounds and Read it to me come from Donrí; a kid's choice here
+   is remembered with the Donrí value it changed, so if a grown-up later changes it in Donrí, Donrí wins. */
+const SNDKEY = "donri.cards.sound";
+function sndAll() { try { return JSON.parse(localStorage.getItem(SNDKEY)) || {}; } catch (e) { return {}; } }
+function sndApply(k, x) {
+  const L = sndAll()[k] || {};
+  x.music = L.music !== undefined ? !!L.music : true; x.narr = L.narr === true;
+  ["sound", "speech"].forEach(f => { const o = L[f]; if (o && o.base === x[f]) x[f] = !!o.v; });
+}
+function sndSave(k, f) {
+  const all = sndAll(), L = all[k] = all[k] || {}, x = S.kids[k];
+  if (f === "music" || f === "narr") L[f] = !!x[f]; else L[f] = { v: !!x[f], base: LINK.kidPref(f, k) };
+  try { localStorage.setItem(SNDKEY, JSON.stringify(all)); } catch (e) {}
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S.opts)); } catch (e) {}
@@ -829,14 +847,62 @@ setInterval(() => {
 /* ---------- sound and read-aloud ---------- */
 let AC = null;
 function ac() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch (e) {} return AC; }
-function blip(notes, type, len) {
+function blip(notes, type, len, vol) {
   if (!kid || !K().sound) return;
   const a = ac(); if (!a) return; let t = a.currentTime;
-  notes.forEach(f => { const o = a.createOscillator(), g = a.createGain(); o.type = type || "square"; o.frequency.value = f; g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + (len || .1)); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + (len || .1)); t += (len || .1) * .8; });
+  notes.forEach(f => { const o = a.createOscillator(), g = a.createGain(); o.type = type || "square"; o.frequency.value = f; g.gain.setValueAtTime(vol || .06, t); g.gain.exponentialRampToValueAtTime(.001, t + (len || .1)); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + (len || .1)); t += (len || .1) * .8; });
+}
+/* gentle music: a slow tin-whistle tune in D (pentatonic) over a soft drone, made in code. Quiet by design. */
+const MUS = { tune: [293.66, 329.63, 369.99, 440, 369.99, 329.63, 293.66, 0, 329.63, 369.99, 440, 493.88, 440, 369.99, 329.63, 0, 440, 493.88, 587.33, 493.88, 440, 369.99, 329.63, 293.66, 329.63, 0, 293.66, 0, 0, 0, 0, 0], step: .5, i: 0, next: 0, timer: null, gain: null };
+function musicOn() { return !!(MUS.tapped && kid && K().music && !document.hidden && R !== "who" && R !== "nopuca" && !(typeof TOUR !== "undefined" && TOUR)); }
+/* battle music: faster, D minor, a driving bass and soft drums. Little mode plays it a touch slower. */
+const BATTLE = [293.66, 0, 349.23, 293.66, 440, 0, 392, 349.23, 293.66, 0, 349.23, 440, 523.25, 440, 392, 0, 329.63, 0, 392, 329.63, 493.88, 0, 440, 392, 349.23, 392, 440, 349.23, 293.66, 0, 0, 0];
+const BASS = [73.42, 73.42, 87.31, 73.42, 98, 98, 87.31, 87.31];
+function noiseHit(a, t, len, vol, hp) {
+  const n = Math.floor(a.sampleRate * len), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+  for (let k = 0; k < n; k++) d[k] = (Math.random() * 2 - 1) * (1 - k / n);
+  const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(); src.buffer = buf; f.type = "highpass"; f.frequency.value = hp; g.gain.value = vol;
+  src.connect(f); f.connect(g); g.connect(a.destination); src.start(t);
+}
+function tone(a, f, t, len, type, vol, atk) { const o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + (atk || .03)); g.gain.exponentialRampToValueAtTime(.0001, t + len); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + len + .05); }
+function musicTick() {
+  const a = AC; if (!a || !MUS.timer) return;
+  if (!musicOn()) return;
+  const mode = R === "match" ? "battle" : "calm";
+  if (MUS.mode !== mode) { MUS.mode = mode; MUS.i = 0; MUS.next = 0; }
+  if (MUS.next < a.currentTime) MUS.next = a.currentTime + .05;
+  const step = mode === "battle" ? (matchCfg && matchCfg.mode === "little" ? .26 : .21) : MUS.step;
+  while (MUS.next < a.currentTime + .6) {
+    const t = MUS.next, i = MUS.i;
+    if (mode === "battle") {
+      const f = BATTLE[i % BATTLE.length]; if (f) tone(a, f, t, step * 1.5, "square", .018, .01);
+      if (i % 2 === 0) tone(a, BASS[(i / 2) % BASS.length | 0], t, step * 1.8, "triangle", .05, .01);
+      if (i % 4 === 0) { const o = a.createOscillator(), g = a.createGain(); o.type = "sine"; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + .12); g.gain.setValueAtTime(.09, t); g.gain.exponentialRampToValueAtTime(.001, t + .16); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .2); }
+      if (i % 4 === 2) noiseHit(a, t, .07, .03, 3000);
+    } else {
+      const f = MUS.tune[i % MUS.tune.length];
+      if (f) tone(a, f, t, step * 1.6, "sine", .035, .06);
+      if (i % 8 === 0) tone(a, i % 16 === 0 ? 146.83 : 110, t, step * 8, "triangle", .03, .3);
+    }
+    MUS.i++; MUS.next += step;
+  }
+}
+function musicSync() {
+  if (musicOn()) { if (!ac()) return; if (!MUS.timer) { MUS.next = 0; MUS.timer = setInterval(musicTick, 250); } musicTick(); }
+  else if (MUS.timer) { clearInterval(MUS.timer); MUS.timer = null; }
+}
+document.addEventListener("visibilitychange", musicSync);
+document.addEventListener("click", () => { MUS.tapped = true; if (kid && K().music) musicSync(); }, true); // music waits for the first tap (browsers need one)
+let narrQ = 0;
+/* the narrator: short, cheery lines for big moments. Off by default; the little speaker button in the game turns it on or off. */
+function narrate(text) {
+  if (!kid || !K().narr) return;
+  try { const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = .9; u.pitch = 1.35; u.volume = 1; speechSynthesis.speak(u); } catch (e) {}
 }
 const SFX = { tap: () => blip([660], "square", .06), hit: () => blip([220, 160], "sawtooth", .09), gem: () => blip([880, 1320], "triangle", .08),
   win: () => blip([523, 659, 784, 1046, 784, 1046], "square", .13), soft: () => blip([392, 330, 262], "triangle", .16),
-  pack: () => blip([392, 523, 659, 784, 988, 1175], "triangle", .09), card: () => blip([784, 1046], "triangle", .07), flip: () => blip([500, 700], "triangle", .05) };
+  pack: () => blip([392, 523, 659, 784, 988, 1175], "triangle", .09), card: () => blip([784, 1046], "triangle", .07), flip: () => blip([500, 700], "triangle", .05),
+  coin: () => blip([988, 1319], "square", .09, .05), big: () => blip([196, 147, 110], "sawtooth", .12, .08), grow: () => blip([392, 494, 587, 784, 988], "triangle", .1), turn: () => blip([587, 784], "triangle", .08, .05), rest: () => blip([330, 294, 247, 196], "sine", .18, .07) };
 let voice = null;
 function pickVoice() { try { const vs = speechSynthesis.getVoices(); voice = vs.find(v => /en-IE/i.test(v.lang)) || vs.find(v => /en-GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; } catch (e) {} }
 try { speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); } catch (e) {}
@@ -845,6 +911,12 @@ function speak(text) {
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/Púcas/g, "Pookas").replace(/Púca/g, "Pooka")); if (voice) u.voice = voice; u.rate = .95; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
 }
 const ICON_SAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#f3e6cc"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="#f3e6cc" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+const ICON_SND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12" stroke="#f3e6cc" stroke-width="2.4" fill="none" stroke-linejoin="round"/><circle cx="7" cy="18" r="3" fill="#f3e6cc"/><circle cx="17" cy="16" r="3" fill="#f3e6cc"/></svg>';
+function sndBtnSync() { musicSync(); }
+function sndPanel() {
+  const x = K(), row = (on, a, lb, sb) => `<div class="sndrow"><span class="sl">${lb}<span class="ss">${sb}</span></span>${tg(on, a, kid)}</div>`;
+  sheet(`<h2 style="margin:0 0 6px">Sound</h2>` + row(x.music, "sndm", "Music", "A soft tune while you play") + row(x.sound, "sndx", "Sounds", "Taps, gems and cheers") + row(x.narr, "sndn", "Narrator", "A cheery voice at big moments") + row(x.speech, "sndv", "Read it to me", "Reads the help words out loud") + `<div class="row" style="margin-top:10px"><button class="btn" data-act="close">Done</button></div>`);
+}
 function sayBtn(text) { return kid && K().speech ? `<button class="say" data-act="say" data-t="${esc(text)}" aria-label="Read it to me">${ICON_SAY}</button>` : ""; }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 
@@ -951,6 +1023,7 @@ function render() {
   else if (R === "match") renderMatch();
   else if (R === "result") app.innerHTML = resultHTML();
   if (R !== "match") window.scrollTo(0, 0);
+  sndBtnSync();
 }
 function updateBar() {
   $("#pwho").textContent = kid ? kid : (S.device === "family" ? "Púcas cards" : S.device);
@@ -986,7 +1059,7 @@ function gateHTML(g) {
 function homeHTML() {
   const k = K(), id = myId(), d = deck();
   const waiting = S.requests.find(r => r.kid === kid && r.status === "waiting");
-  const top = `<div class="row" style="margin-bottom:8px"><button data-act="avatars" aria-label="Change my avatar">${avatarHTML(kid)}</button><h1 class="grow" style="margin:0">${kid}</h1><button class="pxb" data-act="howto" aria-label="How to play">${PX.help}</button>${S.device === "family" ? `<button class="pxb" data-act="who" aria-label="Switch player">${PX.swap}</button>` : `<button class="pxb" data-act="lock" aria-label="Grown-ups">${PX.lock}</button>`}</div>`;
+  const top = `<div class="row" style="margin-bottom:8px"><button data-act="avatars" aria-label="Change my avatar">${avatarHTML(kid)}</button><h1 class="grow" style="margin:0">${kid}</h1><button class="pxb" data-act="howto" aria-label="How to play">${PX.help}</button><button class="pxb" data-act="sndopen" aria-label="Sound and music">${ICON_SND}</button>${S.device === "family" ? `<button class="pxb" data-act="who" aria-label="Switch player">${PX.swap}</button>` : `<button class="pxb" data-act="lock" aria-label="Grown-ups">${PX.lock}</button>`}</div>`;
   const pics = homePics();
   const bt = (act, label, pic, extra) => `<button class="btn alt hb" ${act} style="position:relative">${pic ? `<span class="ico">${pic}</span>` : ""}<span>${label}</span>${extra || ""}</button>`;
   const tile = (act, label, pic, extra) => `<button class="tile" ${act}><span class="pic">${pic}</span><b>${label}</b>${extra || ""}</button>`;
@@ -1413,7 +1486,7 @@ function renderMatch() {
   let h = `<div class="mtop"><button class="pxb sm" data-act="quit" aria-label="Stop match">${PX.close}</button>
    ${matchCfg.hvh ? avatarHTML(ownerName(1 - VIEW), false, 34) : `<span class="av" style="width:34px;height:34px;background-image:url(img/av/rua.jpg)" role="img" aria-label="Rua the red squirrel"></span>`}<b class="px">${ownerName(1 - VIEW)}</b>
    ${!little ? `<span class="rhand" aria-label="${rs.hand.length} cards">${rs.hand.map(() => cback()).join("")}</span>` : ""}
-   <span class="grow"></span><button class="pxb sm" data-act="mhelp" aria-label="Help">${PX.help}</button><span class="turnpill${M.turn !== VIEW ? " r" : ""}">${M.over ? "DONE" : M.pick === VIEW ? "PICK ONE" : M.turn === VIEW ? "YOUR TURN" : (ownerName(M.turn).toUpperCase() + "'S TURN")}</span></div>
+   <span class="grow"></span><button class="pxb sm" data-act="sndopen" aria-label="Sound and music">${ICON_SND}</button><button class="pxb sm" data-act="mhelp" aria-label="Help">${PX.help}</button><span class="turnpill${M.turn !== VIEW ? " r" : ""}">${M.over ? "DONE" : M.pick === VIEW ? "PICK ONE" : M.turn === VIEW ? "YOUR TURN" : (ownerName(M.turn).toUpperCase() + "'S TURN")}</span></div>
   <div class="bd" id="mat" data-drop="mat" style="--stg:url(${stg.img})">${boardSide(1 - VIEW)}
    <button class="now" data-act="sayline" aria-label="What now? Tap to hear it"><span class="t" id="msg" role="status">${esc(line)}</span>${kid && K().speech ? `<span class="say-ic">${ICON_SAY}</span>` : ""}</button>
    ${boardSide(VIEW)}</div>`;
@@ -1530,7 +1603,7 @@ async function showEvent(e) {
     if (!REDUCE()) await wait(40);
     if (d) d.src = img(e.target, "hit");
     if (e.dmg) {
-      SFX.hit(); buzz(e.strong ? [40, 30, 60] : 40);
+      e.strong ? SFX.big() : SFX.hit(); buzz(e.strong ? [40, 30, 60] : 40);
       anim(dc, [{ transform: "none" }, { transform: "translateX(-5px)" }, { transform: "translateX(5px)" }, { transform: "translateX(-3px)" }, { transform: "translateX(2px)" }, { transform: "none" }], { duration: 480 });
       anim(dc && dc.querySelector(".tc"), [{ filter: "brightness(2.6) saturate(.2)" }, { filter: "none" }], { duration: 440 });
       if (host && d) { const p = spot(d, host); burst(host, p.x, p.y, col, e.strong ? 16 : 10, e.strong ? 110 : 80); ringAt(host, p.x, p.y, col); }
@@ -1553,7 +1626,7 @@ async function showEvent(e) {
     const mine = e.side === VIEW, nm = nameOf(e.side, e.who), left = M.sides[e.side].mons.filter(x => !x.out).length;
     const d = $("#spr" + e.side), dc = $(mine ? "#kA" : "#rA"); if (d) d.src = img(e.who, "tired");
     setMsg(little ? `${nm} needs a rest.${mine ? " Well done!" : ""}` : `${nm} is puffed out and goes for a rest.${mine ? " Well done!" : ""}`, true);
-    SFX.soft(); await wait(900);
+    SFX.rest(); await wait(900);
     if (d) d.src = img(e.who, "asleep");
     if (dc) {
       const st = document.createElement("div"); st.className = "stamp"; st.textContent = "💤 PUFFED OUT"; dc.appendChild(st);
@@ -1596,15 +1669,15 @@ async function showEvent(e) {
     await wait(e.auto ? 600 : e.side === VIEW ? 1200 : 1000);
   } else if (e.t === "grow") {
     if (e.side !== VIEW) { holdUp([{ k: "puca", id: e.to }], 0, ownerName(e.side) + " plays…"); await wait(1500); closeSheet(); }
-    renderMatch(); SFX.win(); confettiSmall();
+    renderMatch(); SFX.grow(); narrate("Wow! It grew!"); confettiSmall();
     setMsg(`${e.side === VIEW ? "Your" : ownerName(e.side) + "'s"} ${C[e.from].name} grew into ${C[e.to].name}!`, true); await wait(1700);
   } else if (e.t === "pass") { setMsg(e.side !== VIEW ? ownerName(e.side) + " is saving gems." : (little ? "Saving emeralds!" : "You saved your gems."), true); await wait(900); }
   else if (e.t === "turn") {
     if (matchCfg.hvh && e.side !== VIEW) await handover(e.side);
     renderMatch();
     if (e.side === VIEW && !little && e.got && e.got.length) await drawPop(e.got);
-    if (e.side === VIEW) { const names = (e.got || []).map(k => P.isGrow(k) ? C[k].name : H[k].name); const pg = (e.pouchGot || []).length; setMsg(little ? "Your turn! Tap a move." : M.auto ? (pg ? "Your turn! A gem card went in your pouch. Pick a move or a card." : "Your turn! Your gem is ready. Pick a move or a card.") : "Your turn! Pick a move or a card.", true); banner("YOUR TURN!"); if (little) gemPop(); }
-    else { setMsg(ownerName(e.side) + "'s turn…", false); banner(ownerName(e.side).toUpperCase() + "'S TURN", "r"); }
+    if (e.side === VIEW) { const names = (e.got || []).map(k => P.isGrow(k) ? C[k].name : H[k].name); const pg = (e.pouchGot || []).length; setMsg(little ? "Your turn! Tap a move." : M.auto ? (pg ? "Your turn! A gem card went in your pouch. Pick a move or a card." : "Your turn! Your gem is ready. Pick a move or a card.") : "Your turn! Pick a move or a card.", true); banner("YOUR TURN!"); SFX.turn(); narrate("Your turn!"); if (little) gemPop(); }
+    else { setMsg(ownerName(e.side) + "'s turn…", false); banner(ownerName(e.side).toUpperCase() + "'S TURN", "r"); narrate(ownerName(e.side) + "'s turn!"); }
     await wait(e.side === VIEW ? 300 : 1700);
   }
 }
@@ -1726,7 +1799,7 @@ function finishMatch() {
     if (P.stageFor(after) > stB) lastResult.grew = { from: oldId, to: myId() };
   }
   save(); R = "result"; busy = false; render();
-  if (won || little) { confetti(); SFX.win(); } else SFX.soft();
+  if (won || little) { confetti(); SFX.win(); narrate(won ? "Hooray! You win!" : "Well done! Good match!"); } else { SFX.soft(); narrate("Good match! Well done!"); }
   speak(resultSpeech());
 }
 function finishHvh() {
@@ -2066,6 +2139,8 @@ document.addEventListener("click", e => {
     case "close": closeSheet(); if (R !== "match") render(); break;
     case "dtab": dTab = el.dataset.t; openDonri(); break;
     case "say": speak(el.dataset.t); break;
+    case "sndopen": SFX.tap(); sndPanel(); break;
+    case "sndm": case "sndx": case "sndn": case "sndv": { const f = { sndm: "music", sndx: "sound", sndn: "narr", sndv: "speech" }[a]; K()[f] = !K()[f]; sndSave(kid, f); save(); if (a === "sndn" && K().narr) narrate("Hello! I am the narrator."); if (a === "sndx" && K().sound) SFX.gem(); if (a === "sndv" && !K().speech) { try { speechSynthesis.cancel(); } catch (e) {} } sndPanel(); musicSync(); render(); break; }
     case "sayline": SFX.tap(); speak(M.msg || ""); break;
     case "flip": el.classList.toggle("flipped"); SFX.flip(); if (el.classList.contains("flipped")) { const s = el.closest(".slide"); const i = s ? [...s.parentNode.children].indexOf(s) : -1; const it = HOLD && HOLD.items[i]; if (it && it.k === "puca") speak(C[it.id].name + ". " + ST[it.id].loves + "."); } break;
     case "nopuca": kid = null; NP_KID = el.dataset.k; R = "nopuca"; render(); speak(NP_SAY(NP_KID)); break;

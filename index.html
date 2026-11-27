@@ -644,6 +644,37 @@ h1{font-size:30px}h2{font-size:22px}
 .little .endteam figcaption,.gate.little .endteam figcaption{font-size:19px}
 @media (prefers-reduced-motion:reduce){.zzz{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---- step 5: the guided tour (pointing hand, everything else dimmed) ---- */
+#tut{position:fixed;inset:0;z-index:200;pointer-events:none;font-family:'Andika',sans-serif}
+#tut.hid .tdim,#tut.hid .tshields,#tut.hid .trings,#tut.hid .thand,#tut.hid .tcap{display:none}
+#tut .tdim{position:fixed;inset:0;background:rgba(8,6,20,.86);pointer-events:auto;touch-action:none}
+#tut .tshield{position:fixed;pointer-events:auto;touch-action:none}
+#tut .tring{position:fixed;border:4px solid var(--gold);border-radius:14px;pointer-events:none;box-shadow:0 0 0 3px #fff4d6aa,0 0 22px 6px #e3b23ccc;animation:tring 1.5s ease-in-out infinite}
+@keyframes tring{50%{box-shadow:0 0 0 3px #fff4d6,0 0 34px 12px #e3b23cff}}
+#tut .thand{position:fixed;pointer-events:none;filter:drop-shadow(0 3px 0 #000a)}
+#tut .thand svg{display:block;width:100%;height:auto;shape-rendering:crispEdges}
+#tut .thand .hi{animation:tbobU .9s ease-in-out infinite}
+#tut .thand.down .hi{transform:rotate(180deg);animation-name:tbobD}
+@keyframes tbobU{50%{transform:translateY(-10px)}}
+@keyframes tbobD{0%,100%{transform:rotate(180deg)}50%{transform:rotate(180deg) translateY(-10px)}}
+#tut .tcap{position:fixed;left:10px;right:10px;max-width:480px;margin:0 auto;background:#1f1c38;border:3px solid var(--gold);padding:10px 14px 12px;pointer-events:auto;color:var(--cream);box-shadow:0 8px 24px #000a}
+#tut .tcap.top{top:100px}
+#tut .tcap.bot{bottom:10px}
+#tut .tcap.mid{top:50%;transform:translateY(-50%)}
+#tut .tpill{font-size:16px;color:var(--soft);line-height:1.2}
+#tut .tt{font-size:21px;line-height:1.3;margin:6px 0 10px;font-weight:700}
+#tut .tcap.l .tt{font-size:25px}
+#tut .tb{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+#tut .tb .say{width:48px;height:48px}
+#tut .tbtn{min-height:48px;min-width:48px;padding:6px 18px;font:700 19px 'Andika',sans-serif;background:var(--gold);color:#241a05;box-shadow:inset -3px -3px 0 #a97c1c,inset 3px 3px 0 #f7d27a;flex:1 1 auto}
+#tut .tbtn.alt{background:#2c2852;color:var(--ink);box-shadow:inset -3px -3px 0 #1a1733,inset 3px 3px 0 #3f3a72;flex:0 1 auto}
+#tut .tbtn:active{transform:translateY(2px)}
+#tut .thint{font-size:19px;font-weight:700;color:var(--gold);flex:1 1 auto}
+#tut .tdots{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+#tut .tdots i{width:10px;height:10px;background:#4a4370;display:block}
+#tut .tdots i.on{background:var(--gold)}
+#tut .tstop{position:fixed;top:46px;left:8px;min-height:48px;min-width:48px;padding:6px 14px;background:#2c2852;color:var(--ink);border:2px solid #4a4370;font:700 17px 'Andika',sans-serif;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){#tut .tring,#tut .thand .hi{animation:none!important}}
 </style>
 </head>
 <body>
@@ -787,7 +818,7 @@ function gate() {
   return null;
 }
 setInterval(() => {
-  if (!kid || gate() || R === "who" || document.hidden) return;
+  if (!kid || gate() || R === "who" || document.hidden || TOUR) return;
   if (++secs < 60) return;
   secs = 0;
   LINK.addPlay(kid, 60); K().minsLeft = Math.ceil(LINK.secsLeft(kid) / 60);
@@ -1676,6 +1707,7 @@ async function playEvents() {
 }
 function kidAct(fn) { if (busy || !M || M.turn !== VIEW || M.over) return; closeSheet(); if (fn()) playEvents(); }
 function finishMatch() {
+  if (matchCfg && matchCfg.tour) { if (TOUR) tourEnd(false); else { M = null; matchCfg = null; busy = false; R = "home"; render(); } return; }
   if (matchCfg.hvh) return finishHvh();
   const won = M.over.winner === 0, little = M.mode === "little";
   { const dk = deck(); dk.met = dk.met || {}; dk.met.rua = 1; }
@@ -1865,6 +1897,7 @@ function looksSheet() {
   sheet(`<h2>Pick a look</h2><p class="sub">Try each one in a match and tell me which you like.</p>
   <h2 style="font-size:18px">Button pictures</h2><div class="opt">${b("icons", 1, "1 · Real cards and pack")}${b("icons", 2, "2 · Pixel icons")}${b("icons", 3, "3 · Big picture tiles")}</div>
   <h2 style="font-size:18px;margin-top:14px">Testing</h2><button class="btn alt small" data-act="testcards">Give both kids every card</button><p class="sub">All the Púcas (with Mythics), gem cards, Help cards and Legends, so you can try everything.</p>
+  <h2 style="font-size:18px;margin-top:14px">Help tour (testing)</h2><button class="btn alt small" data-tour="resetoffer">Show the first-time tour offer again</button><p class="sub">Next time ${kid || "a kid"} taps Play, the "First time?" question comes back.</p>
   <button class="btn small" data-act="close" style="margin-top:10px">Done</button>`);
 }
 function testCards() {
@@ -2021,7 +2054,7 @@ document.addEventListener("click", e => {
     case "playhere": PLAY_HERE = true; render(); break;
     case "gsync": LINK.sync(true).then(() => { project(); grownSheet(); }); break;
     case "looks": looksSheet(); break;
-    case "howto": howTo(R === "match" && M ? (M.mode === "little" ? "little" : "normal") : null); break;
+    case "howto": if (R === "match" && M) howTo(M.mode === "little" ? "little" : "normal"); else helpHub(); break;
     case "intro": howTo(INTRO_M, +el.dataset.i); break;
     case "mhelp": if (M) matchHelp(); break;
     case "hvh": HVH.k = KIDS.find(k => k !== kid); hvhSheet(); break;
@@ -2060,7 +2093,7 @@ document.addEventListener("click", e => {
       if (from >= 0) { b[from] = cur; b[slot] = tok; } else { if (cur === "MY") { SFX.soft(); toastKid("Your own Púca always plays. Swap it with another spot instead."); break; } b[slot] = tok; }
       d.board = b; wrote("cards/" + kid, "Board: " + board().map(x => C[x].name).join(", ")); save(); closeSheet(); render(); SFX.card(); break;
     }
-    case "play": if (gate()) { R = "home"; render(); break; } closeSheet(); startMatch(el.dataset.m); break;
+    case "play": if (gate()) { R = "home"; render(); break; } closeSheet(); if (tourOffer(el.dataset.m)) break; startMatch(el.dataset.m); break;
     case "holdcol": holdCollection(+el.dataset.i); break;
       case "cft": CF.type = el.dataset.v; render(); SFX.tap(); break;
       case "cfs": CF.stage = CF.stage === +el.dataset.v ? 0 : +el.dataset.v; render(); SFX.tap(); break;
@@ -2196,6 +2229,7 @@ function backSync() {
   else if (!need && backGuarded) { backGuarded = false; backIgnore++; history.back(); }
 }
 function backStep() {
+  if (TOUR) { tourEnd(false); return; } // step 5: Back in the guided tour = "Stop tour" (the quit sheet would sit hidden under the dimmer)
   const ov = $("#ovl"), busyOv = ov && ov.innerHTML.trim() && !$(".ov") && !$(".hold");
   if ($(".hold") || $(".ov")) { closeSheet(); if (R !== "match") render(); return; }
   if (R === "match") { if (busy || busyOv) return; const q = $('[data-act="quit"]'); if (q) q.click(); return; } // hand-overs and animations: Back waits
@@ -2220,6 +2254,207 @@ LINK.on(kind => {
 });
 if (LINK.hasData) project();
 LINK.start();
+/* ---------- step 5: the guided tour (pointing hand, everything else dimmed) ----------
+   A practice match with a glowing spot, a pointing hand and a few short words each time, read aloud.
+   Nothing counts: no points, no history, no playtime. Lives in Help; offered once the first time a kid plays. */
+let TOUR = null;
+const HAND_PX = [
+  "......oooo......", ".....offffo.....", ".....offffo.....", ".....offffo.....", ".....offffoooo..", ".....offffoffoo.",
+  ".oo..offffoffffo", "offooffffffffffo", "offffffffffffffo", ".offffffffffffo.", ".offffffffffffo.", "..offffffffffo..", "..offffffffffo..", "...oooooooooo..."
+];
+const HAND_SVG = '<svg viewBox="0 0 16 14" aria-hidden="true">' + HAND_PX.map((row, y) => [...row].map((c, x) => c === "." ? "" : `<rect x="${x}" y="${y}" width="1" height="1" fill="${c === "o" ? "#241a05" : "#fff4d6"}"/>`).join("")).join("") + "</svg>";
+
+/* the first glowing gem card in the hand, and the button that puts it on the Púca out front */
+function tourGemIdx() { const s = M.sides[0]; for (let i = 0; i < s.hand.length; i++) if (P.isGem(s.hand[i]) && !P.helpBlock(M, i)) return i; return -1; }
+function tourSheetBtn() {
+  const car = document.querySelector(".hold .car"); if (!car) return null;
+  const sl = car.children[Math.round(car.scrollLeft / Math.max(1, car.clientWidth))]; if (!sl) return null;
+  return sl.querySelector(`.acts button[data-to="${M.sides[0].front}"]:not(:disabled)`) || sl.querySelector(".acts button:not(:disabled)");
+}
+const WAITERS = [".side2.me .wcard.w0:not(.empty)", ".side2.me .wcard.w1:not(.empty)"];
+function tourSteps(key) {
+  const front = () => C[P.front(M.sides[0]).id].name;
+  if (key === "little") return [
+    { sel: "#kA", text: "This is your Púca. It's out front!" },
+    { sel: "#sk0", text: "These are emeralds. You get one every turn." },
+    { sel: "#kA .mv.live.go", kind: "do", opt: true, after: "idle", text: "Your turn! Tap a glowing move." },
+    { sel: "#rA .pf", opt: true, text: "Your move took some of Rua's Puff. Puff is how much a Púca has left." },
+    { sel: WAITERS, opt: true, text: "If a Púca is puffed out, it just goes for a rest. A friend waiting here takes a turn." },
+    { sel: ".side2.me .dots", text: "These dots count your Púcas still playing." },
+    { sel: ".now", text: "Tap here to hear what to do next." },
+    { sel: '[data-act="mhelp"]', text: "Stuck? Tap the question mark." },
+    { sel: '[data-act="pass"]', text: "Not sure? Wait a turn. You get another emerald." },
+    { end: true, text: "That's it! You're ready. Well done!" }
+  ];
+  return [
+    { sel: "#kA", text: "This is your Púca, out front. Its moves are on the card." },
+    { sel: "#kA .pf", text: "Puff is how much it has left. When it's puffed out, it goes for a rest." },
+    { sel: "#sk0", text: "Gems go in these round spots. Moves use gems." },
+    { sel: ".hfan", text: "Your cards wait here. Slide sideways for more. A gold glow means you can play it." },
+    { sel: () => { const i = tourGemIdx(); return i < 0 ? null : document.querySelector(`.hfan > button[data-i="${i}"]`); }, kind: "do", opt: true, after: "sheet", text: "Tap the glowing gem card." },
+    { sel: tourSheetBtn, kind: "do", opt: true, after: "idle", text: () => `Tap "Put on ${front()}".` },
+    { sel: "#sk0", text: "Gems stay on your Púca. Moves use them." },
+    { sel: "#kA .mv.live.go", kind: "do", opt: true, after: "idle", text: "Now tap a glowing move!" },
+    { sel: "#rA .pf", text: "Rua's Puff is here. Take it all and Rua's Púca is puffed out." },
+    { sel: WAITERS, opt: true, text: "Friends wait here. You can give them gems, or swap one out front." },
+    { sel: ".side2.me .dots", text: "These dots count your Púcas still playing." },
+    { sel: ".now", text: "Tap here to hear what to do next." },
+    { sel: '[data-act="mhelp"]', text: "Stuck? Tap the question mark." },
+    { sel: '[data-act="pass"]', text: "No move? Save your gems and end your turn." },
+    { end: true, text: "That's it! You're ready. Well done!" }
+  ];
+}
+
+/* ----- Help, and the first-time offer ----- */
+function helpHub() {
+  const little = K().mode === "little", mine = little ? "little" : "normal", other = little ? "normal" : "little", nm = { little: "Little", normal: "Big-kid" };
+  const t = "Want me to show you around? A pointing hand shows you where to tap. It's just practice.";
+  sheet(`<h2>Help</h2><div class="row" style="justify-content:center"><img src="${img(myId(), "happy")}" alt="" style="height:96px"></div>
+  <p style="font-size:20px;text-align:center;margin:6px 0">${t}</p><div class="row" style="justify-content:center;margin:4px 0">${sayBtn(t)}</div>
+  <button class="btn green" data-tour="go" data-k="${mine}">Show me around</button>
+  <button class="btn alt small" data-tour="go" data-k="${other}" style="margin-top:10px">Show me the ${nm[other]} tour</button>
+  <button class="btn alt small" data-tour="slides" style="margin-top:10px">Quick pictures</button>
+  <button class="btn alt small" data-act="close" style="margin-top:10px">Done</button>`);
+}
+function tourOffer(mode) {
+  const key = mode === "little" ? "little" : "normal", d = deck(); d.seen = d.seen || {};
+  if (d.seen["tour_" + key]) return false;
+  d.seen["tour_" + key] = 1; d.seen[key] = 1; save();
+  const t = "First time? Want a quick tour? A pointing hand shows you around. It's just practice.";
+  sheet(`<h2 style="text-align:center">First time?</h2><div class="row" style="justify-content:center"><img src="${img(myId(), "happy")}" alt="" style="height:110px"></div>
+  <p style="font-size:21px;text-align:center">Want a quick tour? A pointing hand shows you around. It's just practice.</p><div class="row" style="justify-content:center;margin:4px 0">${sayBtn(t)}</div>
+  <button class="btn green" data-tour="go" data-k="${key}">Show me around</button>
+  <button class="btn alt" data-tour="skipoffer" data-m="${mode}" style="margin-top:10px">No thanks, let's play!</button>`, true);
+  speak(t); return true;
+}
+
+/* ----- start, show, finish ----- */
+function startTour(key) {
+  if (!kid || TOUR) return;
+  closeSheet();
+  const little = key === "little", d = deck(), rng = Math.random, kt = board(), rt = P.ruaTeam(kt, rng);
+  matchCfg = { mode: key, kt, rt, stage: d.stage, tour: true };
+  const ruaHelp = P.starterDeck(P.ALL_LINES[0]).help;
+  M = P.newMatch({ mode: little ? "little" : "normal", kidTeam: kt, ruaTeam: rt, kidHelp: d.help, ruaHelp, kidGrow: [], ruaGrow: [], rng, auto: false, first: 0 });
+  M.sides[0].manual = true; M.kind = key; evIdx = M.events.length; busy = false; R = "match"; VIEW = 0; matchCfg.mine = [myId(), null];
+  M.msg = "Practice time! The hand will show you.";
+  d.seen = d.seen || {}; d.seen["tour_" + key] = 1; d.seen[key] = 1; save();
+  render();
+  TOUR = { key, steps: tourSteps(key), i: 0, state: "show", raf: 0, sig: "", missing: 0 };
+  tourBuild(); tourShow(0); TOUR.raf = requestAnimationFrame(tourTick);
+}
+function tourBuild() {
+  const old = document.getElementById("tut"); if (old) old.remove();
+  const r = document.createElement("div"); r.id = "tut"; r.className = "hid";
+  r.innerHTML = `<div class="tdim"></div><div class="tshields"></div><div class="trings"></div><div class="thand"><div class="hi">${HAND_SVG}</div></div><div class="tcap" role="dialog" aria-label="Guided tour"></div><button class="tstop" data-tour="stop" aria-label="Stop the tour">✕ Stop tour</button>`;
+  document.body.appendChild(r);
+}
+function tourEls(st) {
+  if (!st || !st.sel) return [];
+  const v = typeof st.sel === "function" ? st.sel() : st.sel, arr = Array.isArray(v) ? v : [v];
+  return arr.map(s => !s ? null : typeof s === "string" ? document.querySelector(s) : s).filter(e => e && e.isConnected && e.getBoundingClientRect().width > 1);
+}
+function tourReady(w) {
+  if (w === "none") return true;
+  if (w === "sheet") return !!document.querySelector(".hold .car");
+  return !!M && R === "match" && !busy && !M.over && M.turn === VIEW && !M.pick && !document.querySelector(".hold,.drawpop,.hand-over");
+}
+function tourShow(i) {
+  const T = TOUR; if (!T) return;
+  T.i = i; const st = T.steps[i];
+  if (!st) return tourEnd(false);
+  if (st.sel && st.opt && !tourEls(st).length) return tourShow(i + 1);
+  T.cur = st; T.state = "show"; T.sig = ""; T.missing = 0;
+  const root = document.getElementById("tut"); root.classList.remove("hid");
+  const text = typeof st.text === "function" ? st.text() : st.text, little = T.key === "little";
+  const canBack = i > 0 && T.steps[i - 1].kind !== "do";
+  const dots = T.steps.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("");
+  const btns = st.end ? `<button class="tbtn" data-tour="play">${little ? "Play with Rua" : "Play a match"}</button><button class="tbtn alt" data-tour="stop">All done</button>`
+    : st.kind === "do" ? `<span class="thint">Your turn!</span><button class="tbtn alt" data-tour="skip">Skip</button>`
+    : `<button class="tbtn" data-tour="next">Next</button>`;
+  root.querySelector(".tcap").innerHTML = `<div class="tpill">Practice · nothing counts</div><p class="tt" id="tuttext">${esc(text)}</p><div class="tb">${sayBtn(text)}${canBack ? '<button class="tbtn alt" data-tour="back">Back</button>' : ""}${btns}</div><div class="tdots" role="img" aria-label="Step ${i + 1} of ${T.steps.length}">${dots}</div>`;
+  speak(text);
+  if (st.sel) { const e = tourEls(st)[0]; if (e && e.scrollIntoView) { try { e.scrollIntoView({ block: "center", inline: "center", behavior: REDUCE() ? "auto" : "smooth" }); } catch (x) {} } }
+}
+function tourNext() { if (TOUR) tourShow(TOUR.i + 1); }
+function tourBack() { if (TOUR && TOUR.i > 0 && TOUR.steps[TOUR.i - 1].kind !== "do") tourShow(TOUR.i - 1); }
+function tourDone() {
+  const T = TOUR, st = T.cur;
+  T.state = "wait"; T.waitFor = st.after || "idle"; T.waitSince = performance.now(); T.readyAt = 0; T.i++;
+  document.getElementById("tut").classList.add("hid");
+  try { speechSynthesis.cancel(); } catch (e) {}
+}
+function tourEnd(play) {
+  const T = TOUR; if (!T) return;
+  TOUR = null; cancelAnimationFrame(T.raf);
+  const root = document.getElementById("tut"); if (root) root.remove();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  closeSheet(); M = null; matchCfg = null; busy = false; VIEW = 0; R = "home"; render();
+  if (play && kid && !gate()) { if (T.key === "little") startMatch("little"); else { setupMode = "normal"; R = "setup"; render(); } }
+}
+function tourTick() {
+  const T = TOUR; if (!T) return;
+  T.raf = requestAnimationFrame(tourTick);
+  if (R !== "match" || !M) return tourEnd(false);
+  if (T.state === "wait") {
+    const now = performance.now();
+    if (now - T.waitSince > 30000) return tourShow(T.i);
+    if (tourReady(T.waitFor)) { if (!T.readyAt) T.readyAt = now + (T.waitFor === "sheet" ? 150 : 650); else if (now >= T.readyAt) tourShow(T.i); } else T.readyAt = 0;
+    return;
+  }
+  if (T.state === "show") tourLayout();
+}
+function rrPath(r) {
+  const k = Math.min(14, r.w / 2, r.h / 2), l = r.l, t = r.t, w = r.w, h = r.h;
+  return `M${l + k} ${t}H${l + w - k}A${k} ${k} 0 0 1 ${l + w} ${t + k}V${t + h - k}A${k} ${k} 0 0 1 ${l + w - k} ${t + h}H${l + k}A${k} ${k} 0 0 1 ${l} ${t + h - k}V${t + k}A${k} ${k} 0 0 1 ${l + k} ${t}Z`;
+}
+function tourLayout() {
+  const T = TOUR, st = T.cur, root = document.getElementById("tut"); if (!root || !st) return;
+  const W = innerWidth, H = innerHeight, pad = st.kind === "do" ? 4 : 7, little = T.key === "little";
+  const rects = tourEls(st).map(e => { const r = e.getBoundingClientRect(), l = Math.max(2, r.left - pad), t = Math.max(2, r.top - pad), rt = Math.min(W - 2, r.right + pad), b = Math.min(H - 2, r.bottom + pad); return { l, t, w: rt - l, h: b - t }; }).filter(r => r.w > 8 && r.h > 8);
+  if (st.sel && !rects.length) { if (++T.missing > 120 && st.kind !== "do") return tourShow(T.i + 1); } else T.missing = 0;
+  const sig = W + "x" + H + "|" + rects.map(r => [r.l, r.t, r.w, r.h].map(Math.round).join(",")).join("|");
+  if (sig === T.sig) return; T.sig = sig;
+  const dim = root.querySelector(".tdim"), cap = root.querySelector(".tcap"), hand = root.querySelector(".thand");
+  dim.style.clipPath = rects.length ? `path(evenodd,"M0 0H${W}V${H}H0Z ${rects.map(rrPath).join(" ")}")` : "none";
+  root.querySelector(".tshields").innerHTML = st.kind === "do" ? "" : rects.map(r => `<div class="tshield" style="left:${r.l}px;top:${r.t}px;width:${r.w}px;height:${r.h}px"></div>`).join("");
+  root.querySelector(".trings").innerHTML = rects.map(r => `<div class="tring" style="left:${r.l}px;top:${r.t}px;width:${r.w}px;height:${r.h}px"></div>`).join("");
+  if (!rects.length) { cap.className = "tcap mid" + (little ? " l" : ""); hand.style.display = "none"; return; }
+  const top = Math.min(...rects.map(r => r.t)), bot = Math.max(...rects.map(r => r.t + r.h));
+  const capBot = (H - bot) >= (top - 100);
+  cap.className = "tcap " + (capBot ? "bot" : "top") + (little ? " l" : "");
+  const r0 = rects[0], hw = 58, hh = hw * 14 / 16;
+  let below = !capBot, y = below ? r0.t + r0.h - 16 : r0.t - hh + 16;
+  if (below && y + hh > H - 4) { below = false; y = r0.t - hh + 16; }
+  if (!below && y < 48) { below = true; y = r0.t + r0.h - 16; }
+  y = Math.max(48, Math.min(H - hh - 4, y));
+  const x = Math.max(4, Math.min(W - hw - 4, r0.l + r0.w / 2 - hw / 2));
+  hand.className = "thand" + (below ? "" : " down"); hand.style.cssText = `display:block;left:${x}px;top:${y}px;width:${hw}px`;
+}
+
+/* a tap on the glowing thing in a "do" step: hide the tour while it plays, then carry on */
+document.addEventListener("click", e => {
+  const T = TOUR; if (!T || T.state !== "show" || !T.cur || T.cur.kind !== "do" || e.target.closest("#tut")) return;
+  if (tourEls(T.cur).some(x => x.contains(e.target))) tourDone();
+}, true);
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-tour]"); if (!b) return;
+  const a = b.dataset.tour;
+  if (a === "go") startTour(b.dataset.k);
+  else if (a === "next") tourNext();
+  else if (a === "back") tourBack();
+  else if (a === "skip") tourNext();
+  else if (a === "stop") tourEnd(false);
+  else if (a === "play") tourEnd(true);
+  else if (a === "slides") howTo(null);
+  else if (a === "skipoffer") { closeSheet(); startMatch(b.dataset.m); }
+  else if (a === "resetoffer") {
+    if (!kid) { toast("Prototype", "Pick a player first."); return; }
+    const d = deck(); d.seen = d.seen || {}; ["tour_little", "tour_normal", "little", "normal"].forEach(k => delete d.seen[k]); save();
+    toast("Prototype", "The first-time tour offer will show again for " + kid + ".");
+  }
+});
+
 render();
 </script>
 </body>
